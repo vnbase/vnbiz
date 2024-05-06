@@ -1,0 +1,17 @@
+{
+    "name": "vnbase/vnbiz",
+    "description": "My simple library",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Vnbase\\Vnbiz\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "namnt",
+            "email": "nguyentunam@gmail.com"
+        }
+    ],
+    "require": {}
+}
