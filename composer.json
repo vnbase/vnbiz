@@ -1,4 +1,6 @@
 {
+    "version": "1.0.1",
+    "license": "Apache-2.0",
     "name": "vnbase/vnbiz",
     "description": "My simple library",
     "type": "library",
