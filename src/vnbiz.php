@@ -27,6 +27,7 @@ include __DIR__ . '/modules/s3.php';
 include __DIR__ . '/modules/template.php';
 include __DIR__ . '/modules/email.php';
 include __DIR__ . '/modules/jsonschema.php';
+include __DIR__ . '/modules/typescriptschema.php';
 
 
 date_default_timezone_set("UTC");

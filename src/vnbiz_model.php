@@ -293,9 +293,11 @@ class Model {
             $index_name = substr($index_name, 0, 30) . '_' . md5($index_name);
 
             $fields = join(',', $field_names);
-         	$context['sql'] .= "
-         		CREATE FULLTEXT INDEX IF NOT EXISTS $index_name ON `$model_name` ($fields);
-         	";
+			if (!vnbiz_sql_table_index_exists($model_name, $index_name)) {
+				$context['sql'] .= "
+					CREATE FULLTEXT INDEX $index_name ON `$model_name` ($fields);
+				";
+			}
          });
 
         return $this;
@@ -1178,9 +1180,12 @@ class Model {
 			$sql_field_names = join(",", $sql_field_names);
 
 			isset($context['sql']) ?: $context['sql'] = '';
-			$context['sql'] .= "
-				CREATE UNIQUE INDEX IF NOT EXISTS `$index_key` ON `$model_name` ($sql_field_names);
-			";
+
+			if (!vnbiz_sql_table_index_exists($model_name, $index_key)) {
+				$context['sql'] .= "
+					CREATE UNIQUE INDEX `$index_key` ON `$model_name` ($sql_field_names);
+				";
+			}
 		});
 
 		return $this;
@@ -1197,9 +1202,12 @@ class Model {
 			$sql_field_names = join(",", $sql_field_names);
 
 			isset($context['sql']) ?: $context['sql'] = '';
-			$context['sql'] .= "
-				CREATE INDEX IF NOT EXISTS `$index_key` ON `$model_name` ($sql_field_names);
-			";
+
+			if (!vnbiz_sql_table_index_exists($model_name, $index_key)) {
+				$context['sql'] .= "
+					CREATE INDEX `$index_key` ON `$model_name` ($sql_field_names);
+				";
+			}
 		});
 
 		return $this;
@@ -1225,8 +1233,12 @@ class Model {
 				if (is_string($value)) {
 					// $date_time = new DateTime($value, new DateTimeZone('UTC') );
 					// $model[$field_name] = $date_time->getTimestamp();
-					$time = new \DateTime($value, new \DateTimeZone('UTC'));
-					$model[$field_name] = (int)$time->format('Uv');
+					if (preg_match("/^[0-9]*$/i", $value)) {
+
+					} else {
+						$time = new \DateTime($value, new \DateTimeZone('UTC'));
+						$model[$field_name] = (int)$time->format('Uv');
+					}
 					// ;	
 				}
 			} else {
@@ -1237,17 +1249,17 @@ class Model {
 		$this->db_before_create($func_validate_datetime);
 		$this->db_before_update($func_validate_datetime);
 		
-		// $func_alter_datetime = function (&$context) use ($field_name) {
-		// 	$models = &$context['models'];
+		$func_alter_datetime = function (&$context) use ($field_name) {
+			$models = &$context['models'];
 			
-		// 	foreach ($models as &$model) {
-		// 		if ($model[$field_name] == '0000-00-00 00:00:00.000') {
-		// 			$model[$field_name] = "";
-		// 		}
-		// 	}
-		// };
+			foreach ($models as &$model) {
+				if (is_string($model[$field_name])) {
+					$model[$field_name] = intval($model[$field_name]);
+				}
+			}
+		};
 		
-		// $this->db_after_find($func_alter_datetime);
+		$this->db_after_find($func_alter_datetime);
 
 		return $this;
 	}

@@ -11,6 +11,17 @@ function vnbiz_sql_table_column_exists($table, $column)
 	}
 }
 
+function vnbiz_sql_table_index_exists($table, $index)  
+{
+	try {
+		$rows = R::getAll("SHOW INDEX FROM $table where Key_name = '$index';");
+		return sizeof($rows) > 0;
+	} catch(Exception $ex) {
+		return false;
+	}
+}
+
+
 function vnbiz_sql_gen_create_table($table_name)
 {
 	return "
