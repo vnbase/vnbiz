@@ -1,6 +1,15 @@
 <?php
 
 
+function vnbiz_sql_table_column_exists($table, $column)  
+{
+	try {
+		$rows = R::getAll("SHOW COLUMNS FROM `$table` LIKE '$column';");
+		return sizeof($rows) > 0;
+	} catch(Exception $ex) {
+		return false;
+	}
+}
 
 function vnbiz_sql_gen_create_table($table_name)
 {
@@ -66,10 +75,20 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			throw new \Error("Missing sql type for " . $field_def['type']);
 	}
 
-	return "
-		ALTER TABLE `$model_name` CHANGE COLUMN IF EXISTS `$field_name` `$field_name` $sql_type ;
-		ALTER TABLE `$model_name` ADD COLUMN IF NOT EXISTS `$field_name` $sql_type ;
-	";
+	if (vnbiz_sql_table_column_exists($model_name, $field_name)) {
+		return "
+			ALTER TABLE `$model_name` MODIFY COLUMN `$field_name` $sql_type ;
+		";
+	} else {
+		return "
+			ALTER TABLE `$model_name` ADD COLUMN `$field_name` $sql_type ;
+		";
+	}
+
+	// return "
+	// 	ALTER TABLE `$model_name` CHANGE COLUMN `$field_name` IF EXISTS `$field_name` $sql_type ;
+	// 	ALTER TABLE `$model_name` ADD COLUMN IF NOT EXISTS `$field_name` $sql_type ;
+	// ";
 }
 
 function vnbiz_sql_generate()
