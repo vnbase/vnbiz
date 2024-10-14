@@ -1,0 +1,1 @@
+sudo docker run --rm -ti -v .:/app composer:lts composer $@

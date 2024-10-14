@@ -4,7 +4,7 @@ include(__DIR__ . "/../vnbiz.php");
 
 
 vnbiz()
-	->init_db_mysql('localhost', 'vnrootco_dev', 'eIVtmk3q_8H7', 'vnrootco_prodesk')
+	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
 	->init_aws('SECRET', 'KEY', 'ap-southeast-1', 'this.is.for.testing');
 
 vnbiz_model_add('config')

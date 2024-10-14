@@ -144,7 +144,7 @@ class VnBiz {
 			}
 		}
 
-		$action = vnbiz_get_var($context['action'], '=');
+		$action = vnbiz_get_var($context['action'], '');
 		$result = [
 			'code' => 'no_such_action'
 		];
@@ -200,6 +200,8 @@ class VnBiz {
 						if ($result['code'] !== 'success') {
 							http_response_code(400);
 						}
+					} else {
+						$result['message'] = "No action name '$action'";
 					}
 			}
 		} catch (VnbizError $e) {
