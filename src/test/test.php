@@ -5,7 +5,7 @@ include(__DIR__ . "/../vnbiz.php");
 
 vnbiz()
 	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
-	->init_aws('SECRET', 'KEY', 'ap-southeast-1', 'this.is.for.testing');
+	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http');
 
 vnbiz_model_add('config')
 	->s3_image('logo', [50], [200, 50], [50, 2000]);
@@ -22,6 +22,7 @@ vnbiz_model_add('project')
 		'deleted' => ['active']
 	], 'draft')
 	->int('phase')
+	->s3_image('logo', [300], [800])
 	// ->no_delete()
 	->has_usermarks('like')
 	->has_comments()

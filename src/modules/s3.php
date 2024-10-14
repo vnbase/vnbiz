@@ -97,7 +97,8 @@ function vnbiz_s3_get_url_gen($path) {
     $method = 'GET';
     date_default_timezone_set('UTC');
     $date = date("Ymd");
-    $timestamp = date('Ymd\THisZ\Z');
+    // $timestamp = date('Ymd\THisZ\Z');
+    $timestamp = date('Ymd\THis\Z');
 
     $Scope = "$date/$aws_region/$aws_service/aws4_request";
 
@@ -206,7 +207,8 @@ function vnbiz_s3_upload($file_name, $file_path) {
         'x-amz-content-sha256: ' . $file_hash,
         'x-amz-date: ' . $timestamp,
         'Expect:',
-        'Accept:'
+        'Accept:',
+        // 'Content-Disposition: attachment; filename="' . . '"'
     ];
 
     

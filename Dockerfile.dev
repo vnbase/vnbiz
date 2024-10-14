@@ -51,26 +51,25 @@ FROM php:7.4.33-apache as final
 # This example adds the apt packages for the 'gd' extension's dependencies and then
 # installs the 'gd' extension. For additional tips on running apt-get, see
 # https://docs.docker.com/go/dockerfile-aptget-best-practices/
-# RUN apt-get update && apt-get install -y \
-#     libfreetype-dev \
-#     libjpeg62-turbo-dev \
-#     libpng-dev \
-# && rm -rf /var/lib/apt/lists/* \
-#     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-#     && docker-php-ext-install -j$(nproc) gd
+RUN apt-get update && apt-get install -y \
+    libfreetype-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev 
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd
 
-RUN apt-get update 
+# RUN apt-get update 
 # bcmath bz2 calendar ctype curl dba dl_test dom enchant exif ffi fileinfo filter ftp gd 
 # gettext gmp hash iconv imap intl json ldap mbstring mysqli oci8 odbc opcache pcntl pdo 
 # pdo_dblib pdo_firebird pdo_mysql pdo_oci pdo_odbc pdo_pgsql pdo_sqlite pgsql phar posix pspell 
 # random readline reflection session shmop simplexml snmp soap sockets sodium spl standard sysvmsg 
 # sysvsem sysvshm tidy tokenizer xml xmlreader xmlwriter xsl zend_test zip
 
-RUN apt-get install -y libonig-dev
-RUN docker-php-ext-install mbstring
-RUN docker-php-ext-install pdo
-RUN docker-php-ext-install pdo_mysql
-RUN docker-php-ext-install bcmath
+RUN apt-get install -y libonig-dev libcurl4 libcurl4-openssl-dev
+RUN docker-php-ext-install bcmath mbstring
+RUN docker-php-ext-install pdo pdo_mysql curl
+
+RUN rm -rf /var/lib/apt/lists/* 
     #
 # Add PECL extensions, see
 # https://github.com/docker-library/docs/tree/master/php#pecl-extensions

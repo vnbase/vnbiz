@@ -76,3 +76,16 @@ services:
     # (this is just an example, not intended to be a production configuration)
     ports:
       - 9090:80
+
+  minio:
+    image: bitnami/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioroot
+      MINIO_ROOT_PASSWORD: rootpass
+      MINIO_DEFAULT_BUCKETS: vnbizbucket
+      MINIO_DATA_DIR: /my-data
+    volumes:
+      - ./data.minio:/my-data:rw
+    ports:
+      - 9000:9000
+      - 9001:9001

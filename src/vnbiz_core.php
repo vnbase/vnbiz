@@ -120,8 +120,8 @@ class VnBiz {
 		header('Access-Control-Max-Age: 86400');
 
 		$context = $_POST;
-
 		$json = json_decode(file_get_contents('php://input'), true);
+
 		if ($json) {
 			$context = $json;
 		}
