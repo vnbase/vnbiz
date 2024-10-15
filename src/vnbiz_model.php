@@ -702,7 +702,7 @@ class Model {
 
 		$mark_types = func_get_args();
 
-		$this->schema->mark_types = $mark_types;
+		// $this->schema->mark_types = $mark_types;
 
 		$default = [];
 

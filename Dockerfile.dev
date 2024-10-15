@@ -39,7 +39,7 @@ RUN --mount=type=bind,source=composer.json,target=composer.json \
 # most recent version of that tag when you build your Dockerfile.
 # If reproducability is important, consider using a specific digest SHA, like
 # php@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
-FROM php:7.4.33-apache as final
+FROM php:8.3.12-apache as final
 
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
@@ -52,6 +52,7 @@ FROM php:7.4.33-apache as final
 # installs the 'gd' extension. For additional tips on running apt-get, see
 # https://docs.docker.com/go/dockerfile-aptget-best-practices/
 RUN apt-get update && apt-get install -y \
+    # zlib1g-dev \
     libfreetype-dev \
     libjpeg62-turbo-dev \
     libpng-dev 
@@ -66,8 +67,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # sysvsem sysvshm tidy tokenizer xml xmlreader xmlwriter xsl zend_test zip
 
 RUN apt-get install -y libonig-dev libcurl4 libcurl4-openssl-dev
-RUN docker-php-ext-install bcmath mbstring
+RUN docker-php-ext-install bcmath mbstring 
 RUN docker-php-ext-install pdo pdo_mysql curl
+# RUN docker-php-ext-install opcache
 
 RUN rm -rf /var/lib/apt/lists/* 
     #

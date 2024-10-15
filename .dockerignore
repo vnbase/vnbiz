@@ -33,3 +33,6 @@
 **/vendor
 LICENSE
 README.md
+data.minio
+data.mysql
+vendor
