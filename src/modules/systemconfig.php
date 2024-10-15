@@ -5,7 +5,7 @@ use VnBiz\VnBizError;
 function vnbiz_init_module_systemconfig()
 {
     vnbiz_model_add('systemconfig')
-        ->slug('k')
+        ->string('k')
         ->text('v')
         ->unique('k_unique', ['k'])
         ->read_permission('super', 'config_read')

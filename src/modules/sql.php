@@ -63,8 +63,10 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			break;
 		case 'password':
 		case 'string':
-		case 'slug':
 			$sql_type = 'VARCHAR(255)';
+			break;
+		case 'slug':
+			$sql_type = 'TEXT';
 			break;
 		case 'text':
 			$sql_type = 'LONGTEXT';

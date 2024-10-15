@@ -89,4 +89,30 @@ vnbiz_model_add('task')
     ->text_search('name', 'description');
 // -> commentable()
 
+
+// site
+
+vnbiz_model_add('website')
+	->text('title')
+	->author()
+	->require('title', 'created_by')
+	;
+
+vnbiz_model_add('webpost')
+	->string('type')
+	->slug('slug')
+	->ref('parent_id', 'webpost')
+	// ->md5_of('slugmd5', ['slug'])
+	->enum('status', ['draft', 'review', 'public'], 'draft')
+	->text('title', 'description', 'content')
+	->has_usermarks('like')
+	->has_comments()
+	->has_tags()
+	->author()
+	->has_tags()
+	->has_history()
+	->require('title', 'created_by')
+    ->text_search('title', 'description', 'content');
+	// ->index('uniqueslugmd5', ['slugmd5'])
+	;
 vnbiz()->start();

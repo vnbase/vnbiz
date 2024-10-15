@@ -1,5 +1,7 @@
 <?php 
 require (__DIR__ . '/test.php');
 
-# echo vnbiz_sql_generate();
-vnbiz_sql_alter_tables();
+(vnbiz_sql_alter_tables());
+echo "<pre>";
+echo vnbiz_sql_generate();
+echo "</pre>";

@@ -6,7 +6,7 @@ use divengine\div;
 function vnbiz_init_module_template()
 {
     vnbiz_model_add('template')
-        ->slug('name')
+        ->string('name') //TODO: validate
         ->string('language')
         ->text('content')
         ->text('note')
