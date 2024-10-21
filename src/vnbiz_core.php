@@ -119,11 +119,11 @@ class VnBiz {
 		// Set the age to 1 day to improve speed/caching.
 		header('Access-Control-Max-Age: 86400');
 
-		$context = $_POST;
+		$context = array_merge($_GET, $_POST);
 		$json = json_decode(file_get_contents('php://input'), true);
 
 		if ($json) {
-			$context = $json;
+			$context = array_merge($context, $json);
 		}
 
 		if (isset($_FILES['model'])) {
