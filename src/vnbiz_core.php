@@ -3,6 +3,7 @@
 namespace VnBiz;
 
 use Exception, Throwable, R;
+USE RedBeanPHP\RedException\SQL as SQLException;
 
 class VnBizError extends Exception {
 	private $status = null;
@@ -290,7 +291,7 @@ class VnBiz {
 				
 				!$in_trans && R::commit();
 				!$in_trans && ($context['in_trans'] = false);
-			} catch (Exception $e) {
+			} catch (SQLException $e) {
 				!$in_trans && R::rollback();
 				!$in_trans && ($context['in_trans'] = false);
 				if (method_exists($e, 'getSqlState') && $e->getSqlState() === '23000') { // dupplicated

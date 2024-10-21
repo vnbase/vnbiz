@@ -57,6 +57,8 @@ vnbiz_model_add('member')
 	// })
 ;
 
+
+
 vnbiz_model_add('task')
 	->string('name')
 	->text('description')
