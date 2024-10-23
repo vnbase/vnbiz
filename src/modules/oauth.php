@@ -13,15 +13,15 @@ function vnbiz_init_module_oauth() {
 
 
     vnbiz_add_action("service_oauth_google_url", function (&$context) use ($provider) {
-        if (!$context['params'] || !isset($context['params']['redirectUrl']) ) {
+        if (!$context['params'] || !isset($context['params']['redirect_url']) ) {
             $context['code'] = 'missing_params';
-            $context['error'] = "Missing 'redirectUrl'";
+            $context['error'] = "Missing 'redirect_url'";
             return;
         }
 
-        $redirect_uri = $context['params']['redirectUrl'];
+        $redirect_url = $context['params']['redirect_url'];
 
-        $authUrl = $provider->getAuthorizationUrl(['redirect_uri' => $redirect_uri]);
+        $authUrl = $provider->getAuthorizationUrl(['redirect_uri' => $redirect_url]);
 
         $context['code'] = 'success';
         $context['error'] = null;
@@ -29,21 +29,36 @@ function vnbiz_init_module_oauth() {
     });
 
     vnbiz_add_action("service_oauth_google_login", function (&$context) use ($provider) {
-        if (!$context['params'] || !isset($context['params']['code']) ) {
+        if (!$context['params'] || !isset($context['params']['code']) || !isset($context['params']['redirect_url']) ) {
             $context['code'] = 'missing_params';
-            $context['error'] = "Missing 'code'";
+            $context['error'] = "Missing 'code' or 'redirect_url'";
             return;
         }
+        $code = $context['params']['code'];
+        $redirect_url = $context['params']['redirect_url'];
 
         $token = $provider->getAccessToken('authorization_code', [
-            'code' => $_GET['code']
+            'code' => $code,
+            'redirect_uri' => $redirect_url
         ]);
 
         try {
             $ownerDetails = $provider->getResourceOwner($token);
             $context['code'] = 'success';
             $context['error'] = null;
-            $context['models'] = [$ownerDetails];
+            $context['models'] = [$ownerDetails->toArray()];
+/**
+ * 
+		{
+			"sub": "100976852762216133136",
+			"name": "Nam Nguyen Tu",
+			"given_name": "Nam",
+			"family_name": "Nguyen Tu",
+			"picture": "https://lh3.googleusercontent.com/a/ACg8ocLY0chYOm2ioWNz-b77oo_KfbQPBefr_LF0jKv3mfWeMUQYXfgJ=s96-c",
+			"email": "nguyentunam@gmail.com",
+			"email_verified": true
+		}
+ */
         } catch (Exception $e) { 
             throw $e;
         }

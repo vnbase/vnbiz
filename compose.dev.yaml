@@ -15,7 +15,8 @@ services:
     ports:
       - 8080:80
     volumes:
-      - ./src:/var/www/html
+      - ./src:/var/www/html/src
+      - ./test:/var/www/html/test
     depends_on:
       - mysql8
 

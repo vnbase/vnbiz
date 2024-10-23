@@ -70,6 +70,7 @@ function vnbiz_init_module_user() {
         ->string('timezone')
         ->string('fuid')
         ->string('language')
+        ->string('google_sub')
         ->password('password')
         ->text('bio', 'note')
         ->enum('status', ['active', 'inactive', 'deleted'], 'active')

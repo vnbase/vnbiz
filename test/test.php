@@ -1,8 +1,7 @@
 <?php
 
-// include(__DIR__ . "/../../../vendor/autoload.php");
-// require_once '/var/www/vendor/autoload.php';
-include(__DIR__ . "/../vnbiz.php");
+include_once(__DIR__ . "/../vendor/autoload.php");
+include_once(__DIR__ . "/../src/vnbiz.php");
 
 
 vnbiz()
