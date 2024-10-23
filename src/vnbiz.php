@@ -28,6 +28,7 @@ include __DIR__ . '/modules/template.php';
 include __DIR__ . '/modules/email.php';
 include __DIR__ . '/modules/jsonschema.php';
 include __DIR__ . '/modules/typescriptschema.php';
+include __DIR__ . '/modules/oauth.php';
 
 
 date_default_timezone_set("UTC");
@@ -35,4 +36,4 @@ ini_set('session.cookie_samesite', 'None');
 session_start();
 
 vnbiz()
-	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email');
+	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth');

@@ -27,6 +27,8 @@ RUN --mount=type=bind,source=composer.json,target=composer.json \
     --mount=type=cache,target=/tmp/cache \
     composer install --no-interaction
 
+RUN ls
+RUN sleep 5s
 ################################################################################
 
 # Create a new stage for running the application that contains the minimal
@@ -86,9 +88,9 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 # Copy the app dependencies from the previous install stage.
-COPY --from=deps app/vendor/ /var/www/html/vendor
+COPY --from=deps /app/vendor /var/www/vendor
 # Copy the app files from the app directory.
-# COPY ./src /var/www/html
+COPY ./src /var/www/html
 
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
