@@ -47,6 +47,43 @@ function vnbiz_init_module_oauth() {
             $context['code'] = 'success';
             $context['error'] = null;
             $context['models'] = [$ownerDetails->toArray()];
+
+            if (!$ownerDetails->getEmail()) {
+                throw new Error("Missing email!");
+            }
+
+            $user = vnbiz_model_find_one('user', [
+                'email' => $ownerDetails->getEmail()
+            ]);
+
+            if ($user) {
+                if (isset($user['google_sub'])) {
+                    if ($user['google_sub'] != $ownerDetails->getId()) {
+                        throw new Error("Same user email but diffrent google_sub!");
+                    }
+                }
+
+                vnbiz_model_update('user', ['id' => $user['id']], ['google_sub' => $ownerDetails->getId()]);
+            } else {
+                $user = vnbiz_model_create('user', [
+                    'email' => $ownerDetails->getEmail(),
+                    'google_sub' => $ownerDetails->getId(),
+                    'language' => $ownerDetails->getLocale(),
+                    'first_name' => $ownerDetails->getFirstName(),
+                    'last_name' => $ownerDetails->getLastName(),
+                    'alias' => $ownerDetails->getName(),
+                    // 'avatar' => $ownerDetails->getAvatar()
+                ]);
+            }
+            $context['models'] = [$user];
+            $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], 'vnbizsecret');
+
+        } catch (Exception $e) { 
+            throw $e;
+        }
+    });
+
+}
 /**
  * 
 		{
@@ -59,9 +96,3 @@ function vnbiz_init_module_oauth() {
 			"email_verified": true
 		}
  */
-        } catch (Exception $e) { 
-            throw $e;
-        }
-    });
-
-}
