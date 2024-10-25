@@ -93,18 +93,50 @@ vnbiz_model_add('task')
 // -> commentable()
 
 
-// site
+// web
 
 vnbiz_model_add('website')
-	->text('title')
+	->text('title', 'description')
+	->s3_image('logo', [32], [50], [200])
 	->author()
 	->require('title', 'created_by')
 	;
 
+vnbiz_model_add('webdomain')
+	->text('domain')
+	->bool('verified')
+	->author()
+	->ref('website_id', 'website')
+	->require('domain', 'created_by', 'website_id')
+	->web_before_create(function (&$context) {
+		$context['verified'] = false;
+	})
+	->web_before_create(function (&$context) {
+		unset($context['verified']);
+	})
+	->index('domain', ['verified'])
+	;
+
+vnbiz_model_add('weblayout')
+	->ref('website_id', 'website')
+	->string('name')
+	->require('name', 'website_id')
+	->text('content')
+	;
+
+vnbiz_model_add('webblock')
+	->ref('website_id', 'website')
+	->string('name')
+	->text('content')
+	->unique('unique_name', ['website_id', 'name'])
+	;
+
 vnbiz_model_add('webpost')
-	->string('type')
+	->string('type', 'language')
 	->slug('slug')
+	->s3_image('logo', [300], [500])
 	->ref('parent_id', 'webpost')
+	->ref('weblayout_id', 'weblayout')
 	// ->md5_of('slugmd5', ['slug'])
 	->enum('status', ['draft', 'review', 'public'], 'draft')
 	->text('title', 'description', 'content')
@@ -118,4 +150,37 @@ vnbiz_model_add('webpost')
     ->text_search('title', 'description', 'content');
 	// ->index('uniqueslugmd5', ['slugmd5'])
 	;
+
+// marketing
+
+
+
+// crm 
+
+// vnbiz_model_add('customer')
+// 	->
+// 	;
+
+
+// e-commerce
+
+vnbiz_model_add('product')
+	->string('name')
+	->s3_image('thumbnail', [150], [300], [800])
+	->uint('price')
+	->text('description')
+	->has_usermarks('like')
+	->has_comments()
+	->has_tags()
+	->author()
+	->has_history()
+	->require('name', 'created_by')
+    ->text_search('title', 'description');
+
+vnbiz_model_add('productimage')
+	->ref('product_id', 'product')
+	->s3_image('thumbnail', [300], [800])
+	->index('product_id', ['product_id'])
+	;
+
 vnbiz()->start();
