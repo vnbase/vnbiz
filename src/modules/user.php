@@ -2,12 +2,12 @@
 
 use VnBiz\VnBizError;
 
-function vnbiz_getAuthorizationHeader(){
+function vnbiz_getAuthorizationHeader()
+{
     $headers = null;
     if (isset($_SERVER['Authorization'])) {
         $headers = trim($_SERVER["Authorization"]);
-    }
-    else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { //Nginx or fast CGI
+    } else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { //Nginx or fast CGI
         $headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
     } elseif (function_exists('apache_request_headers')) {
         $requestHeaders = apache_request_headers();
@@ -24,7 +24,8 @@ function vnbiz_getAuthorizationHeader(){
 /**
  * get access token from header
  * */
-function vnbiz_getBearerToken() {
+function vnbiz_getBearerToken()
+{
     $headers = vnbiz_getAuthorizationHeader();
     // HEADER: Get the access token from the header
     if (!empty($headers)) {
@@ -35,7 +36,8 @@ function vnbiz_getBearerToken() {
     return null;
 }
 
-function vnbiz_user_add_default() {
+function vnbiz_user_add_default()
+{
     $usercount = vnbiz_model_count('user');
     if ($usercount > 0) {
         return;
@@ -57,11 +59,12 @@ function vnbiz_user_add_default() {
     return $user;
 }
 
-function vnbiz_init_module_user() {
+function vnbiz_init_module_user()
+{
     vnbiz_model_add('user')
-    	->default([
-    		'username' => 'u' . vnbiz_random_string()
-    	])
+        ->default([
+            'username' => 'u' . vnbiz_random_string()
+        ])
         ->string('alias', 'first_name', 'last_name')
         ->s3_image('avatar', [50], [200])
         ->s3_image('cover', [640, 360], [820, 312])
@@ -88,8 +91,28 @@ function vnbiz_init_module_user() {
             }
             return false;
         })
+        ->write_permission_or(['super', 'user_write'], function (&$context) {
+            $filter_id = null;
+            if (isset($context['filter'])) {
+                $filter_id = vnbiz_get_key($context['filter'], 'id', null);
+            };
+            $model_id = null;
+            if (isset($context['model'])) {
+                $model_id = vnbiz_get_key($context['model'], 'id', null);
+            };
 
-        ;
+            $user = vnbiz_user();
+            if ($user) {
+                $id = $user['id'];
+                if ($id == $filter_id || $id == $model_id) {
+                    var_dump($filter_id);
+                    return true;
+                }
+            }
+            return false;
+        })
+
+    ;
     // ->text_search('alias', 'first_name', 'last_name', 'email', 'description',);
 
 
@@ -101,7 +124,7 @@ function vnbiz_init_module_user() {
         ->text_search('name', 'description')
         ->read_permission('super', 'permission_read')
         ->write_permission('super', 'permission_write')
-        ;
+    ;
 
 
     vnbiz_model_add('useringroup')
@@ -111,51 +134,51 @@ function vnbiz_init_module_user() {
         ->unique('user_unique_group', ['user_id', 'usergroup_id'])
         ->read_permission('super', 'permission_read')
         ->write_permission('super', 'permission_write')
-        ;
+    ;
 
     vnbiz_add_action('web_before', function (&$context) {
-    	if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
-	        $auth = $_SERVER["HTTP_AUTHORIZATION"];
-	        $auth_array = explode(" ", $auth);
-	        $un_pw = explode(":", base64_decode($auth_array[1]));
-	        $email = $un_pw[0];
-	        $password = $un_pw[1];
-	     
-	    	if ($email && $password) {
-		        $user = vnbiz_model_find_one('user', [
-		            'email' => $email
-		        ]);
-		        if ($user) {
-		        	if (password_verify($password, $user['password'])) {
-		        		$_SESSION['user_id'] = $user['id'];
-		        	}
-		        } else {
-        			session_destroy();
-		        }
-	    	}
-	    }
-	    
-	    $token = vnbiz_getBearerToken();
-	    if ($token) {
+        if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
+            $auth = $_SERVER["HTTP_AUTHORIZATION"];
+            $auth_array = explode(" ", $auth);
+            $un_pw = explode(":", base64_decode($auth_array[1]));
+            $email = $un_pw[0];
+            $password = $un_pw[1];
 
-	    	$arr = vnbiz_token_verify($token, 'vnbizsecret');
-	    	
-	    	if ($arr && $arr['user_id']) {
+            if ($email && $password) {
+                $user = vnbiz_model_find_one('user', [
+                    'email' => $email
+                ]);
+                if ($user) {
+                    if (password_verify($password, $user['password'])) {
+                        $_SESSION['user_id'] = $user['id'];
+                    }
+                } else {
+                    session_destroy();
+                }
+            }
+        }
+
+        $token = vnbiz_getBearerToken();
+        if ($token) {
+
+            $arr = vnbiz_token_verify($token, 'vnbizsecret');
+
+            if ($arr && $arr['user_id']) {
                 $user = vnbiz_model_find_one('user', ['id' => $arr['user_id']]);
 
                 if ($user) {
                     $GLOBALS['vnbiz_user'] = $user;
-                    
-	                $find_context = [
-	                    'model_name' => 'useringroup',
-	                    'filter' => [
-	                        'user_id' => $user['id']
-	                    ],
-	                    'meta' => [
-	                        'ref' => true
-	                    ]
-	                ];
-	                vnbiz_model_search($find_context);
+
+                    $find_context = [
+                        'model_name' => 'useringroup',
+                        'filter' => [
+                            'user_id' => $user['id']
+                        ],
+                        'meta' => [
+                            'ref' => true
+                        ]
+                    ];
+                    vnbiz_model_search($find_context);
                     $permissions = [];
                     foreach ($find_context['models'] as $useringroup) {
                         if (isset($useringroup['@usergroup_id'])) {
@@ -169,13 +192,13 @@ function vnbiz_init_module_user() {
                 } else {
                     unset($_SESSION['user_id']);
                 }
-	    	} else {
-            	throw new VnBizError('Invalid bearer token', "invalid_token");
-	    	}
-	    	
-	    	return; // skip other
-	    }
-    
+            } else {
+                throw new VnBizError('Invalid bearer token', "invalid_token");
+            }
+
+            return; // skip other
+        }
+
         $has_session = session_status() == PHP_SESSION_ACTIVE;
         if ($has_session) {
             if (isset($_SESSION['user_id']) && !isset($GLOBALS['vnbiz_user'])) {
@@ -242,7 +265,7 @@ function vnbiz_init_module_user() {
         $user = vnbiz_model_find_one('user', [
             'email' => $email
         ]);
-        
+
         if (!$user) {
             $context['code'] = 'invalid_params';
             $context['error'] = "Invalid email or password";
@@ -261,9 +284,9 @@ function vnbiz_init_module_user() {
         $context['code'] = 'success';
         $context['error'] = null;
         $context['models'] = [$user];
-        
+
         $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], 'vnbizsecret');
-        
+
         $_SESSION['user_id'] = $user['id'];
     });
 
