@@ -678,7 +678,13 @@ class Model {
 
 	public function db_after_commit_delete($func) {
 		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_commit_delete_$model_name", $func);
+
+		return $this;
+	}
+
+	public function on_new_ref($func) {
+		$model_name = $this->schema->model_name;
+		vnbiz_add_action("model_new_ref_$model_name", $func);
 
 		return $this;
 	}
@@ -1359,6 +1365,19 @@ class Model {
 
 		// $this->schema->back_refs[$ref_model_name]['back_ref'][$model_name] = 1;
 
+		$this->db_before_create(function (&$context) use ($field_name, $ref_model_name) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				$context['ref_field_name'] = $field_name;
+				vnbiz_do_action("model_new_ref_$ref_model_name", $context);
+			}
+		});
+		$this->db_before_update(function (&$context) use ($field_name, $ref_model_name) {
+			if (isset($context['model']) && isset($context['model'][$field_name]) && $context['model'][$field_name] != $context['old_model'][$field_name]) {
+				$context['ref_field_name'] = $field_name;
+				vnbiz_do_action("model_new_ref_$ref_model_name", $context);
+			}
+		});
+
 		return $this;
 	}
 
@@ -1777,6 +1796,29 @@ class Model {
 			
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		});
+		return $this;
+	}
+
+	/**
+	 * $func receives $context of the new created or updated model which refs to this one
+	 * use $context['model'][$context['ref_field_name']] to get id;
+	 */
+	public function ref_permission_or($permissions, $func) {
+		$check_ref_permission = function (&$context) use ($permissions, $func) {
+			
+			if (vnbiz_user_has_permissions(...$permissions)) {
+				return;
+			}
+
+			if ($func($context)) {
+				return;
+			}
+			
+			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
+		};
+
+		$this->on_new_ref($check_ref_permission);
+
 		return $this;
 	}
 

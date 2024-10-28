@@ -1,5 +1,7 @@
 <?php
 
+use VnBiz\VnBizError;
+
 include_once(__DIR__ . "/../vendor/autoload.php");
 include_once(__DIR__ . "/../src/vnbiz.php");
 
@@ -34,16 +36,50 @@ vnbiz_model_add('project')
 	->back_ref_count('task_new_count', 'task', 'project_id', ['state' => 'new'])
 	->back_ref_count('task_working_count', 'task', 'project_id', ['state' => 'working'])
     ->text_search('name', 'description')
-	// ->ref_permissions_or(['super', 'project_write'], function (&$context) {
-	// })
+	->db_after_commit_create(function (&$context) {
+		$user = vnbiz_user();
+		if (!$user) {
+			return;
+		}
+		vnbiz_model_create('projectmember', [
+			'user_id' => $user['id'],
+			'project_id' => $context['model']['id'],
+			'role' => 'owner'
+		]);
+	});
     ;
 
-vnbiz_model_add('member')
+vnbiz_model_add('projectmember')
+	->author()
+	->enum('role', ['owner', 'worker'], 'owner')
 	->ref('user_id', 'user')
 	->ref('project_id', 'project')
-	->enum('role', ['owner', 'worker'], 'owner')
-	->author()
-	->require('created_by');
+	->require('created_by')
+	->unique('unique_member', ['user_id', 'project_id'])
+	->write_permission_or(['super', 'project_write'], function(&$context) {
+		$project_id = $context['model']['project_id'];
+
+		// no member
+		$count = vnbiz_model_count('projectmember', [
+			'project_id' => $project_id
+		]);
+		if ($count === 0) {
+			return true;
+		}
+
+		// the user is the owner		
+		$user = vnbiz_user();
+		if (!$user) {
+			return false;
+		}
+		$count = vnbiz_model_count('projectmember', [
+			'project_id' => $project_id,
+			'user_id' => $user['id'],
+			'role' => 'owner'
+		]);
+		return $count > 0;
+	})
+	;
 	// ->default_filter(function () {
 	// 	$user = vnbiz_user();
 	// 	if (!$user) {
@@ -92,6 +128,36 @@ vnbiz_model_add('task')
 	->has_v()
 	->require('created_by', 'name', 'project_id')
     ->has_history()
+	->read_permission_or(['super', 'project_read'], function (&$context) {
+		$user = vnbiz_user();
+		if (!$user) {
+			return false;
+		}
+
+		if (isset($context['filter']) && isset($context['filter']['project_id'])) {
+			$project_id_or_array = $context['filter']['project_id'];
+			$count = vnbiz_model_count('projectmember', [
+				'project_id' => $project_id_or_array,
+				'user_id' => $user['id']
+			]);
+			return $count >= (is_array($project_id_or_array) ? sizeof($project_id_or_array) : 1);
+		}
+		return false;
+	})
+	->write_permission_or(['super', 'project_write'], function(&$context) {
+		$project_id = $context['model']['project_id'];
+
+		// the user is the owner		
+		$user = vnbiz_user();
+		if (!$user) {
+			return false;
+		}
+		$count = vnbiz_model_count('projectmember', [
+			'project_id' => $project_id,
+			'user_id' => $user['id']
+		]);
+		return $count > 0;
+	})
     ->text_search('name', 'description');
 // -> commentable()
 
