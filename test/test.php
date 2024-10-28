@@ -34,6 +34,8 @@ vnbiz_model_add('project')
 	->back_ref_count('task_new_count', 'task', 'project_id', ['state' => 'new'])
 	->back_ref_count('task_working_count', 'task', 'project_id', ['state' => 'working'])
     ->text_search('name', 'description')
+	// ->ref_permissions_or(['super', 'project_write'], function (&$context) {
+	// })
     ;
 
 vnbiz_model_add('member')
@@ -41,7 +43,7 @@ vnbiz_model_add('member')
 	->ref('project_id', 'project')
 	->enum('role', ['owner', 'worker'], 'owner')
 	->author()
-	->require('created_by')
+	->require('created_by');
 	// ->default_filter(function () {
 	// 	$user = vnbiz_user();
 	// 	if (!$user) {
@@ -87,7 +89,8 @@ vnbiz_model_add('task')
 		}
 	})
 	->has_usermarks('like')
-	->require('created_by', 'name', 'project_id', 'created_by')
+	->has_v()
+	->require('created_by', 'name', 'project_id')
     ->has_history()
     ->text_search('name', 'description');
 // -> commentable()

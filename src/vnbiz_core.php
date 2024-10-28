@@ -335,7 +335,7 @@ class VnBiz {
 			try {
 				$row = R::findOne($model_name, 'id=?', [ $filter['id']]);
 				
-				if ($row['id'] == 0) {
+				if (!$row || $row['id'] == 0) {
 					throw new VnBizError('Model do not exist', 'model_not_found');
 				}
 				$context['old_model'] = $row->export();

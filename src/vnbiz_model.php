@@ -211,6 +211,23 @@ class Model {
 		return $this;
 	}
 
+	public function has_v() {
+
+		$this->uint("v");
+		$this->default(['v' => 1]);
+
+		$this->db_before_update(function (&$context) {
+			if(isset($context['filter']) && isset($context['filter']['v'])) {
+				if ($context['old_model']['v'] != $context['filter']['v']) {
+					throw new VnBizError("Current value is " . $context['old_model']['v'] . '. But ' . $context['filter']['v'] . ' is provided.', 'invalid_v');
+				}
+			}
+			$context['model']['v'] = $context['old_model']['v'] + 1;
+		});
+
+		return $this;
+	}
+
 	public function model_name() {
 		$field_names = func_get_args();
 
