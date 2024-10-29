@@ -2,6 +2,7 @@
 
 use VnBiz\VnBiz;
 use VnBiz\VnBizError;
+use PHPMailer\PHPMailer\PHPMailer;
 
 function vnbiz_init_module_email() {
     vnbiz_model_add('email')
@@ -48,19 +49,46 @@ function vnbiz_init_module_email() {
             $to_email = vnbiz_get_key($model, 'to_email');
             $subject = vnbiz_get_key($model, 'subject');
             $content = vnbiz_get_key($model, 'content');
-
-            $from = $from_name ? "$from_name <$from_email>" : $from_email;
-            $to = $to_name ? "$to_name <$to_email>" : $to_email;
             
-            $headers =[
-                'From' => $from,
-                'Content-type' => 'text/html; charset=UTF-8'
-            ];
+            if (defined('MAILER_SMTP_HOST')) {
+                $mailer = new PHPMailer(true);
+                $mailer->isSMTP();                                            //Send using SMTP
+                $mailer->Host       = MAILER_SMTP_HOST;                     //Set the SMTP server to send through
+                $mailer->SMTPAuth   = true;//defined('MAILER_SMTP_USERNAME');                                   //Enable SMTP authentication
+                $mailer->Username   = MAILER_SMTP_USERNAME;                     //SMTP username
+                $mailer->Password   = MAILER_SMTP_PASSWORD;                               //SMTP password
+                            //Enable implicit TLS encryption
+                $mailer->Port       = MAILER_SMTP_PORT;    
+                if ($mailer->Port === 587) {
+                    $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                }
+                if ($mailer->Port === 465) {
+                    $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                }
+                $mailer->isHTML(true);
+                $mailer->Subject = $subject;
+                $mailer->Body = $content;
+                $mailer->setFrom($from_email, $from_name);
+                $mailer->addAddress($to_email, $to_name);
+                $mailer->send();
+            } else {
+                $from = $from_name ? "$from_name <$from_email>" : $from_email;
+                $to = $to_name ? "$to_name <$to_email>" : $to_email;
 
-            $success = mail($to, $subject, $content, $headers);
-            if (!$success) {
-                $errorMessage = error_get_last()['message'];
-                throw new VnBizError($errorMessage, 'email_error');
+                $headers =[
+                    'From' => $from,
+                    'Content-type' => 'text/html; charset=UTF-8'
+                ];
+                $success = mail($to, $subject, $content, $headers);
+                if (!$success) {
+                    $errorMessage = error_get_last();
+                    if (isset($errorMessage) && isset($errorMessage['message'])) {
+                         $errorMessage = error_get_last()['message'];
+                    } else {
+                        $errorMessage = 'UNKNOWN';
+                    }
+                    throw new VnBizError($errorMessage, 'email_error');
+                }
             }
         })
         ->write_permission('super', 'email_write')

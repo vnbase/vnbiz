@@ -5,3 +5,5 @@ require (__DIR__ . '/test.php');
 echo "<pre>";
 echo vnbiz_sql_generate();
 echo "</pre>";
+
+vnbiz_user_add_default();

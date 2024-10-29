@@ -227,10 +227,14 @@ class VnBiz {
 	}
 
 	public function handle_restful() {
-
+		ob_start();
 		$result = $this->restful();
-		header('Content-Type: application/json');
+		$output = ob_get_clean();
+		if ($output) {
+			error_log($output);
+		}
 
+		header('Content-Type: application/json');
 		unset($result['params']);
 		echo json_encode($result, JSON_UNESCAPED_SLASHES);
 		return;
@@ -248,7 +252,16 @@ class VnBiz {
 		} else {
 			define('AWS_S3_HOST', "s3.$region.amazonaws.com");	
 		}
+		return $this;
+	}
+
+	public function init_mailer($host, $username, $password, $port = 465) {
+		define('MAILER_SMTP_HOST', $host);
+		define('MAILER_SMTP_PORT', $port);
+		define('MAILER_SMTP_USERNAME', $username);
+		define('MAILER_SMTP_PASSWORD', $password);
 		
+		return $this;
 	}
 
 	public function init_db_mysql($servername = 'localhost', $username = "", $password = "", $dbname = '') {

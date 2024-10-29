@@ -8,7 +8,8 @@ include_once(__DIR__ . "/../src/vnbiz.php");
 
 vnbiz()
 	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
-	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http');
+	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http')
+	;
 
 vnbiz_model_add('config')
 	->s3_image('logo', [50], [200, 50], [50, 2000]);
