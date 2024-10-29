@@ -428,7 +428,12 @@ function vnbiz_array_to_xml($array, &$simpleXmlElement) {
             }
             vnbiz_array_to_xml($value, $subnode);
         } else {
-            $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
+            if(is_numeric($key) ) {
+                $subnode = $simpleXmlElement->addChild('item', htmlspecialchars("$value"));
+                $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
+            } else {
+                $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
+            }
         }
      }
 }
