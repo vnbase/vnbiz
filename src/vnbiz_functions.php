@@ -123,6 +123,10 @@ function vnbiz_handle_restful()
 {
     return vnbiz()->handle_restful();
 }
+function vnbiz_handle_restful_xml()
+{
+    return vnbiz()->handle_restful_xml();
+}
 
 // function vnbiz_model_name_exists($model_name) {
 
@@ -411,4 +415,20 @@ function vnbiz_notification_create($model) {
     $r = vnbiz_model_create('notification', $model, true /** to skip create trans */);
     unset($GLOBALS['vnbiz_permission_skip']);
     return $r;
+}
+
+function vnbiz_array_to_xml($array, &$simpleXmlElement) {
+    foreach( $array as $key => $value ) {
+        if( is_array($value) ) {
+            if(is_numeric($key) ){
+                $subnode = $simpleXmlElement->addChild('item');
+                $subnode->addAttribute('index', $key);
+            } else {
+                $subnode = $simpleXmlElement->addChild(str_replace('@', 'A', "$key"));
+            }
+            vnbiz_array_to_xml($value, $subnode);
+        } else {
+            $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
+        }
+     }
 }

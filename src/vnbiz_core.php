@@ -4,6 +4,7 @@ namespace VnBiz;
 
 use Exception, Throwable, R;
 USE RedBeanPHP\RedException\SQL as SQLException;
+use SimpleXMLElement;
 
 class VnBizError extends Exception {
 	private $status = null;
@@ -234,9 +235,26 @@ class VnBiz {
 			error_log($output);
 		}
 
-		header('Content-Type: application/json');
 		unset($result['params']);
+
+		header('Content-Type: application/json');
 		echo json_encode($result, JSON_UNESCAPED_SLASHES);
+		return;
+	}
+
+	public function handle_restful_xml() {
+		ob_start();
+		$result = $this->restful();
+		$output = ob_get_clean();
+		if ($output) {
+			error_log($output);
+		}
+		unset($result['params']);
+
+		$xml = new SimpleXMLElement('<?xml version="1.0"?><data></data>');
+		vnbiz_array_to_xml($result, $xml);
+		header("Content-type: text/xml; charset=utf-8");
+		echo $xml->asXML();
 		return;
 	}
 
