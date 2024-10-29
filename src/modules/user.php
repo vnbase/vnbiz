@@ -91,26 +91,7 @@ function vnbiz_init_module_user()
             }
             return false;
         })
-        ->write_permission_or(['super', 'user_write'], function (&$context) {
-            $filter_id = null;
-            if (isset($context['filter'])) {
-                $filter_id = vnbiz_get_key($context['filter'], 'id', null);
-            };
-            $model_id = null;
-            if (isset($context['model'])) {
-                $model_id = vnbiz_get_key($context['model'], 'id', null);
-            };
-
-            $user = vnbiz_user();
-            if ($user) {
-                $id = $user['id'];
-                if ($id == $filter_id || $id == $model_id) {
-                    var_dump($filter_id);
-                    return true;
-                }
-            }
-            return false;
-        })
+        ->write_permission_or_user_id(['super', 'user_write'], 'id')
 
     ;
     // ->text_search('alias', 'first_name', 'last_name', 'email', 'description',);

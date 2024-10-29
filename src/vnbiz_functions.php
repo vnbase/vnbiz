@@ -405,3 +405,10 @@ function vnbiz_web_user()
     vnbiz_do_action("web_after_model_find_user", $c);
     return $c['models'][0];
 }
+
+function vnbiz_notification_create($model) {
+    $GLOBALS['vnbiz_permission_skip'] = true;
+    $r = vnbiz_model_create('notification', $model, true /** to skip create trans */);
+    unset($GLOBALS['vnbiz_permission_skip']);
+    return $r;
+}
