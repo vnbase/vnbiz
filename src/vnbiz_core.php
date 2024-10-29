@@ -3,15 +3,17 @@
 namespace VnBiz;
 
 use Exception, Throwable, R;
-USE RedBeanPHP\RedException\SQL as SQLException;
+use RedBeanPHP\RedException\SQL as SQLException;
 use SimpleXMLElement;
 
-class VnBizError extends Exception {
+class VnBizError extends Exception
+{
 	private $status = null;
 	private $error_fields = null;
 
 	// Redefine the exception so message isn't optional
-	public function __construct($message, $status = 'unknown', $error_fields = null, Throwable $previous = null) {
+	public function __construct($message, $status = 'unknown', $error_fields = null, Throwable $previous = null)
+	{
 		// make sure everything is assigned properly
 		parent::__construct($message, 1, $previous);
 
@@ -20,23 +22,28 @@ class VnBizError extends Exception {
 	}
 
 	// custom string representation of object
-	public function __toString() {
+	public function __toString()
+	{
 		return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
 	}
 
-	public function get_status() {
+	public function get_status()
+	{
 		return $this->status;
 	}
-	public function get_error_fields() {
+	public function get_error_fields()
+	{
 		return $this->error_fields;
 	}
 }
 
 
-class Actions {
+class Actions
+{
 	private $actions = [];
 
-	public function add_action($action, $func) {
+	public function add_action($action, $func)
+	{
 		// echo "add_action: $action\n";
 		if (!is_callable($func)) {
 			throw new VnBizError("vnbiz: handler must be callable!");
@@ -51,11 +58,13 @@ class Actions {
 		return $this;
 	}
 
-	public function has_action($action) {
+	public function has_action($action)
+	{
 		return isset($this->actions[$action]);
 	}
 
-	public function add_action_one($action, $func) {
+	public function add_action_one($action, $func)
+	{
 		// echo "add_action_one: $action\n";
 		if (!is_callable($func)) {
 			throw new VnBizError("vnbiz: handler must be callable!");
@@ -70,7 +79,8 @@ class Actions {
 		return $this;
 	}
 
-	public function do_action($action, &$context = []) {
+	public function do_action($action, &$context = [])
+	{
 		// echo "do_action: $action\n";
 		if (isset($this->actions[$action])) {
 			foreach ($this->actions[$action] as $func) {
@@ -79,7 +89,8 @@ class Actions {
 		}
 	}
 
-	public function do_action_one($action, &$context = []) {
+	public function do_action_one($action, &$context = [])
+	{
 		if (isset($this->actions[$action])) {
 			if (sizeof($this->actions[$action]) > 0) {
 				$func = $this->actions[$action][0];
@@ -89,18 +100,21 @@ class Actions {
 	}
 }
 
-class VnBiz {
+class VnBiz
+{
 	private static $_instance = null;
 
 	public $actions = null;
 
 	private $models = [];
 
-	private function __construct() {
+	private function __construct()
+	{
 		$this->actions = new Actions();
 	}
 
-	public static function instance() {
+	public static function instance()
+	{
 		if (self::$_instance == null) {
 			self::$_instance = new VnBiz();
 		}
@@ -108,7 +122,8 @@ class VnBiz {
 		return self::$_instance;
 	}
 
-	public function restful() {
+	public function restful()
+	{
 		// Specify domains from which requests are allowed
 		header('Access-Control-Allow-Origin: *');
 
@@ -121,6 +136,10 @@ class VnBiz {
 		// Set the age to 1 day to improve speed/caching.
 		header('Access-Control-Max-Age: 86400');
 
+		if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+			return;
+		}
+
 		$context = array_merge($_GET, $_POST);
 		$json = json_decode(file_get_contents('php://input'), true);
 
@@ -130,7 +149,7 @@ class VnBiz {
 
 		if (isset($_FILES['model'])) {
 			isset($context['model']) ?: $context['model'] = [];
-			foreach($_FILES['model']['name'] as $field_name=>$file_name) {
+			foreach ($_FILES['model']['name'] as $field_name => $file_name) {
 				if (is_string($file_name)) {
 					if ($_FILES['model']['error'][$field_name] === 0) {
 						$context['model'][$field_name] = [
@@ -150,11 +169,11 @@ class VnBiz {
 		$result = [
 			'code' => 'no_such_action'
 		];
-		
+
 
 		try {
 			vnbiz_do_action('web_before', $context);
-			
+
 			switch ($action) {
 				case 'model_create':
 					vnbiz_do_action('web_model_create', $context);
@@ -187,13 +206,13 @@ class VnBiz {
 
 						if (isset($context['models'])) {
 							$arr = [];
-							foreach($context['models'] as &$model) {
-								if(isset($model['@model_name'])) {
+							foreach ($context['models'] as &$model) {
+								if (isset($model['@model_name'])) {
 									$arr[$model['@model_name']] = $arr[$model['@model_name']] ?? [];
 									$arr[$model['@model_name']][] = &$model;
 								}
 							}
-							foreach($arr as $model_name=>$data) {
+							foreach ($arr as $model_name => $data) {
 								$c = ['models' => &$data];
 								vnbiz_do_action("web_after_model_find_$model_name", $c);
 							}
@@ -212,7 +231,7 @@ class VnBiz {
 				'code' => $e->get_status(),
 				'error' => $e->getMessage(),
 				'error_fields' => $e->get_error_fields(),
-				'stack'=> $e->getTraceAsString()
+				'stack' => $e->getTraceAsString()
 			];
 		} catch (Exception $e) {
 			http_response_code(500);
@@ -227,7 +246,8 @@ class VnBiz {
 		return $result;
 	}
 
-	public function handle_restful() {
+	public function handle_restful()
+	{
 		ob_start();
 		$result = $this->restful();
 		$output = ob_get_clean();
@@ -242,7 +262,8 @@ class VnBiz {
 		return;
 	}
 
-	public function handle_restful_xml() {
+	public function handle_restful_xml()
+	{
 		ob_start();
 		$result = $this->restful();
 		$output = ob_get_clean();
@@ -258,31 +279,34 @@ class VnBiz {
 		return;
 	}
 
-	public function init_aws($access_key_id, $access_key_secret, $region, $s3_bucket, $host = "", $scheme = 'https') {
+	public function init_aws($access_key_id, $access_key_secret, $region, $s3_bucket, $host = "", $scheme = 'https')
+	{
 		define('AWS_ACCESS_KEY_ID', $access_key_id);
 		define('AWS_ACCESS_KEY_SECRET', $access_key_secret);
 		define('AWS_REGION', $region);
 		define('AWS_S3_BUCKET', $s3_bucket);
 		define('AWS_S3_SCHEME', $scheme);
-		
+
 		if ($host) {
-			define('AWS_S3_HOST', $host);	
+			define('AWS_S3_HOST', $host);
 		} else {
-			define('AWS_S3_HOST', "s3.$region.amazonaws.com");	
+			define('AWS_S3_HOST', "s3.$region.amazonaws.com");
 		}
 		return $this;
 	}
 
-	public function init_mailer($host, $username, $password, $port = 465) {
+	public function init_mailer($host, $username, $password, $port = 465)
+	{
 		define('MAILER_SMTP_HOST', $host);
 		define('MAILER_SMTP_PORT', $port);
 		define('MAILER_SMTP_USERNAME', $username);
 		define('MAILER_SMTP_PASSWORD', $password);
-		
+
 		return $this;
 	}
 
-	public function init_db_mysql($servername = 'localhost', $username = "", $password = "", $dbname = '') {
+	public function init_db_mysql($servername = 'localhost', $username = "", $password = "", $dbname = '')
+	{
 		R::setup("mysql:host=$servername;dbname=$dbname", $username, $password); //for both mysql or mariaDB
 		R::freeze(true); //will freeze redbeanphp
 
@@ -319,7 +343,7 @@ class VnBiz {
 				$context['model']['id'] = $id;
 				$context['model']['@model_name'] = $model_name;
 				$this->actions()->do_action("db_after_create_$model_name", $context);
-				
+
 				!$in_trans && R::commit();
 				!$in_trans && ($context['in_trans'] = false);
 			} catch (SQLException $e) {
@@ -364,8 +388,8 @@ class VnBiz {
 
 			!$in_trans && R::begin();
 			try {
-				$row = R::findOne($model_name, 'id=?', [ $filter['id']]);
-				
+				$row = R::findOne($model_name, 'id=?', [$filter['id']]);
+
 				if (!$row || $row['id'] == 0) {
 					throw new VnBizError('Model do not exist', 'model_not_found');
 				}
@@ -377,12 +401,12 @@ class VnBiz {
 				// $row->import($context['model']);
 				$row->import($schema->crop($context['model']));
 				R::store($row);
-				
+
 				$skip_db_actions ?: $this->actions()->do_action("db_after_update_$model_name", $context);
 
 				!$in_trans && R::commit();
 				!$in_trans && ($context['in_trans'] = false);
-			} catch(Exception $e) {
+			} catch (Exception $e) {
 				!$in_trans && R::rollback();
 				!$in_trans && ($context['in_trans'] = false);
 				throw $e;
@@ -424,7 +448,7 @@ class VnBiz {
 			if (!$in_trans) {
 				$context['in_trans'] = true;
 			}
-			
+
 			!$in_trans && R::begin();
 			try {
 				$rows = R::find($model_name, $conditions_query, $conditions_param);
@@ -448,7 +472,7 @@ class VnBiz {
 
 				!$in_trans && R::commit();
 				!$in_trans && ($context['in_trans'] = false);
-			} catch( Exception $e ) {
+			} catch (Exception $e) {
 				!$in_trans && R::rollback();
 				!$in_trans && ($context['in_trans'] = false);
 				throw $e;
@@ -470,22 +494,22 @@ class VnBiz {
 			$model_name = $context['model_name'];
 			$filter = vnbiz_get_var($context['filter'], []);
 
-            $text_search = vnbiz_get_var($meta['text_search'], null);
+			$text_search = vnbiz_get_var($meta['text_search'], null);
 			$conditions_query = [];
 			$conditions_param = [];
-			
-            $schema = $this->models[$model_name]->schema();
+
+			$schema = $this->models[$model_name]->schema();
 
 			if ($text_search && $schema->text_search) {
-			    $fields = array_map(function ($item) {
-			        return '`' . $item . '`';
-                }, $schema->text_search);
-			    $fields = join(',', $fields);
-			    $text_condition = "MATCH (" . $fields . ') AGAINST(?)';
+				$fields = array_map(function ($item) {
+					return '`' . $item . '`';
+				}, $schema->text_search);
+				$fields = join(',', $fields);
+				$text_condition = "MATCH (" . $fields . ') AGAINST(?)';
 
-                $conditions_query[] = $text_condition;
-			    $conditions_param[] = $text_search;
-            }
+				$conditions_query[] = $text_condition;
+				$conditions_param[] = $text_search;
+			}
 
 			$field_names = vnbiz_get_model_field_names($model_name);
 			foreach ($field_names as $field_name) {
@@ -493,21 +517,21 @@ class VnBiz {
 					$value = $filter[$field_name];
 					if (is_array($value)) {
 						if (isset($value[0])) {
-							$conditions_query[] = "$field_name IN (". R::genSlots( $value ) .")";
+							$conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
 							array_push($conditions_param, ...$value);
 						} else {
 							if (array_key_exists('$gt', $value)) {
 								$conditions_query[] = "$field_name > ?";
 								$conditions_param[] = $value['$gt'];
-							} 
+							}
 							if (array_key_exists('$gte', $value)) {
 								$conditions_query[] = "$field_name >= ?";
 								$conditions_param[] = $value['$gte'];
-							} 
+							}
 							if (array_key_exists('$lt', $value)) {
 								$conditions_query[] = "$field_name < ?";
 								$conditions_param[] = $value['$lt'];
-							} 
+							}
 							if (array_key_exists('$lte', $value)) {
 								$conditions_query[] = "$field_name <= ?";
 								$conditions_param[] = $value['$lte'];
@@ -526,15 +550,15 @@ class VnBiz {
 
 			$this->actions()->do_action("db_before_find_$model_name", $context);
 
-			
+
 			$context['db_context'] = [
 				'conditions_query' => &$conditions_query,
 				'conditions_param' => &$conditions_param
 			];
-			
+
 			vnbiz_do_action("db_before_count_exe_$model_name", $context);
 			unset($context['db_context']);
-			
+
 			$conditions_query = join(' AND ', $conditions_query);
 
 			$this->actions()->do_action("db_before_count_$model_name", $context);
@@ -560,7 +584,7 @@ class VnBiz {
 			$filter = vnbiz_get_var($context['filter'], []);
 			$order = vnbiz_get_var($meta['order'], []);
 			$limit = vnbiz_get_var($meta['limit'], 100);
-            $text_search = vnbiz_get_var($meta['text_search'], null);
+			$text_search = vnbiz_get_var($meta['text_search'], null);
 			$offset = vnbiz_get_var($meta['offset'], 0);
 			$ref = vnbiz_get_var($meta['ref'], false);
 			$count = vnbiz_get_var($meta['count'], false);
@@ -568,18 +592,18 @@ class VnBiz {
 			$conditions_param = [];
 			$order_query = [];
 
-            $schema = $this->models[$model_name]->schema();
+			$schema = $this->models[$model_name]->schema();
 
 			if ($text_search && $schema->text_search) {
-			    $fields = array_map(function ($item) {
-			        return '`' . $item . '`';
-                }, $schema->text_search);
-			    $fields = join(',', $fields);
-			    $text_condition = "MATCH (" . $fields . ') AGAINST(?)';
+				$fields = array_map(function ($item) {
+					return '`' . $item . '`';
+				}, $schema->text_search);
+				$fields = join(',', $fields);
+				$text_condition = "MATCH (" . $fields . ') AGAINST(?)';
 
-                $conditions_query[] = $text_condition;
-			    $conditions_param[] = $text_search;
-            }
+				$conditions_query[] = $text_condition;
+				$conditions_param[] = $text_search;
+			}
 
 			$field_names = vnbiz_get_model_field_names($model_name);
 			foreach ($field_names as $field_name) {
@@ -587,21 +611,21 @@ class VnBiz {
 					$value = $filter[$field_name];
 					if (is_array($value)) {
 						if (isset($value[0])) {
-							$conditions_query[] = "$field_name IN (". R::genSlots( $value ) .")";
+							$conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
 							array_push($conditions_param, ...$value);
 						} else {
 							if (array_key_exists('$gt', $value)) {
 								$conditions_query[] = "$field_name > ?";
 								$conditions_param[] = $value['$gt'];
-							} 
+							}
 							if (array_key_exists('$gte', $value)) {
 								$conditions_query[] = "$field_name >= ?";
 								$conditions_param[] = $value['$gte'];
-							} 
+							}
 							if (array_key_exists('$lt', $value)) {
 								$conditions_query[] = "$field_name < ?";
 								$conditions_param[] = $value['$lt'];
-							} 
+							}
 							if (array_key_exists('$lte', $value)) {
 								$conditions_query[] = "$field_name <= ?";
 								$conditions_param[] = $value['$lte'];
@@ -621,12 +645,12 @@ class VnBiz {
 			$order_query = $order_query ? ' ORDER BY ' . $order_query : '';
 
 			$skip_db_actions ?: $this->actions()->do_action("db_before_find_$model_name", $context);
-			
+
 			$context['db_context'] = [
 				'conditions_query' => &$conditions_query,
 				'conditions_param' => &$conditions_param
 			];
-			
+
 			vnbiz_do_action("db_before_find_exe_$model_name", $context);
 			unset($context['db_context']);
 
@@ -716,7 +740,8 @@ class VnBiz {
 		return $this;
 	}
 
-	public function start() {
+	public function start()
+	{
 		$context = [];
 		vnbiz_do_action('vnbiz_before_start', $context);
 
@@ -750,7 +775,7 @@ class VnBiz {
 			$models = &$context['models'] ?? [];
 			$ref_fields = vnbiz_model($model_name)->schema()->get_fields_by_type("ref");
 			$rows = [];
-			foreach($models as &$model) {
+			foreach ($models as &$model) {
 				foreach ($ref_fields as $ref_field_name => $ref_def) {
 					if (isset($model['@' . $ref_field_name]) && $model['@' . $ref_field_name]) {
 						$rows[$ref_field_name] = $rows[$ref_field_name] ?? [];
@@ -834,7 +859,8 @@ class VnBiz {
 		vnbiz_do_action('vnbiz_after_start', $context);
 	}
 
-	public function init_modules() {
+	public function init_modules()
+	{
 		$module_names = func_get_args();
 
 		foreach ($module_names as $module_name) {
@@ -848,7 +874,8 @@ class VnBiz {
 		return $this;
 	}
 
-	public function add_model($model_name) {
+	public function add_model($model_name)
+	{
 		if (isset($this->models[$model_name])) {
 			throw new VnBizError("vnbiz: model already existed: $model_name");
 		}
@@ -859,11 +886,13 @@ class VnBiz {
 		return $model;
 	}
 
-	public function actions() {
+	public function actions()
+	{
 		return $this->actions;
 	}
 
-	public function models() {
+	public function models()
+	{
 		return $this->models;
 	}
 }

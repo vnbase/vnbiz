@@ -70,21 +70,6 @@ vnbiz_model_add('projectmember')
 		return $count > 0;
 	})
 	;
-	// ->default_filter(function () {
-	// 	$user = vnbiz_user();
-	// 	if (!$user) {
-	// 		throw new VnBizError('Login required', 'permission');
-	// 	}
-
-	// 	if (vnbiz_user_has_permissions('super')) {
-	// 		return [];
-	// 	}
-
-	// 	return [
-	// 		'user_id' => $user['id']
-	// 	];
-	// })
-;
 
 
 
