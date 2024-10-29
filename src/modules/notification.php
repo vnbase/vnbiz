@@ -31,7 +31,7 @@ function vnbiz_init_module_notification() {
         ->read_permission_or_user_id(['super', 'notification_read'], 'user_id')
         ->write_permission_or_user_id(['super', 'notification_write'], 'user_id')
         ;
-    vnbiz_model_add('notification_token')
+    vnbiz_model_add('notificationtoken')
         ->ref('user_id', 'user')
         ->text('token', 'agent')
         ->require('user_id')
