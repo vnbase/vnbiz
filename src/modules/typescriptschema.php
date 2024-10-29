@@ -29,6 +29,9 @@ function vnbiz_echo_typescript_map_type($type) {
 function vnbiz_echo_typescript_schema() {
     $models = vnbiz()->models();
     $jsonmodels = [];
+	
+	header('Content-Type: application/x-typescript; charset=utf-8');
+
     foreach ($models as $model_name=>$model) {
     	$fields = $model->schema()->schema;
     	
