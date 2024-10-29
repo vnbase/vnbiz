@@ -430,7 +430,7 @@ function vnbiz_array_to_xml($array, &$simpleXmlElement) {
         } else {
             if(is_numeric($key) ) {
                 $subnode = $simpleXmlElement->addChild('item', htmlspecialchars("$value"));
-                $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
+                $subnode->addAttribute('index', $key);
             } else {
                 $simpleXmlElement->addChild(str_replace('@', 'A', "$key"),htmlspecialchars("$value"));
             }
