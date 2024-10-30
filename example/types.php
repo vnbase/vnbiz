@@ -212,7 +212,7 @@ vnbiz_model_add('product')
 	->author()
 	->has_history()
 	->require('name', 'created_by')
-    ->text_search('title', 'description');
+    ->text_search('name', 'description');
 
 vnbiz_model_add('productimage')
 	->ref('product_id', 'product')
