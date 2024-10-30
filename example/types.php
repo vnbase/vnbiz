@@ -199,13 +199,6 @@ vnbiz_model_add('webpost')
 
 
 
-// crm 
-
-// vnbiz_model_add('customer')
-// 	->
-// 	;
-
-
 // e-commerce
 
 vnbiz_model_add('product')
@@ -226,3 +219,33 @@ vnbiz_model_add('productimage')
 	->s3_image('thumbnail', [300], [800])
 	->index('product_id', ['product_id'])
 	;
+
+
+
+// crm & marketing
+
+// vnbiz_model_add('customer')
+// 	->
+// 	;
+
+vnbiz_model_add('campaign')
+	->string('name')
+	->text('description')
+	->datetime('start_at', 'end_at')
+	->author()
+	->require('name', 'created_by')
+    ->text_search('name', 'description');
+	;
+	
+vnbiz_model_add('contact')
+	->s3_image('photo', [50], [200])
+	->string('first_name', 'last_name', 'email', 'phone_number')
+	->enum('gender', ['male', 'female', 'other'], 'other')
+	->string('languages')
+	->date('dob')
+	->json('address')
+	->ref('campaign_id', 'campaign')
+	->string('source_id')
+	->require('campaign_id')
+	->author()
+;

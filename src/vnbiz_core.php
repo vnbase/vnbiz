@@ -133,10 +133,9 @@ class VnBiz
 		// Additional headers which may be sent along with the CORS request
 		header('Access-Control-Allow-Headers: *');
 
-		// Set the age to 1 day to improve speed/caching.
-		header('Access-Control-Max-Age: 86400');
-
 		if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+			// Set the age to 1 day to improve speed/caching.
+			header('Access-Control-Max-Age: 86400');
 			return;
 		}
 
