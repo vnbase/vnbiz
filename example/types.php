@@ -239,7 +239,8 @@ vnbiz_model_add('campaign')
 	
 vnbiz_model_add('contact')
 	->s3_image('photo', [50], [200])
-	->string('first_name', 'last_name', 'email', 'phone_number')
+	->text('description')
+	->string('display_name', 'first_name', 'last_name', 'email', 'phone')
 	->enum('gender', ['male', 'female', 'other'], 'other')
 	->string('languages')
 	->date('dob')
@@ -248,4 +249,5 @@ vnbiz_model_add('contact')
 	->string('source_id')
 	->require('campaign_id')
 	->author()
+    ->text_search('description', 'display_name', 'first_name', 'last_name', 'email', 'phone');
 ;
