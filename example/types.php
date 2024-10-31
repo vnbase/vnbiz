@@ -249,5 +249,6 @@ vnbiz_model_add('contact')
 	->string('source_id')
 	->require('campaign_id')
 	->author()
+	->index('campaign_source', ['campaign_id', 'source_id'])
     ->text_search('description', 'display_name', 'first_name', 'last_name', 'email', 'phone');
 ;
