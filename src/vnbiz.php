@@ -66,5 +66,6 @@ vnbiz_add_action('service_sys_schemas', function (&$context) {
 			'properties' => $properties
 		];
 	}
+	$context['code'] = 'success';
 	$context['models'] = $models;
 });
