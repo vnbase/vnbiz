@@ -42,7 +42,7 @@ vnbiz()
 	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth', 'notification', 'redis', 'monitor');
 
 
-vnbiz_add_action('service_sys_schema', function (&$context) {
+vnbiz_add_action('service_sys_schemas', function (&$context) {
 	$models = [];
 	foreach (vnbiz()->models() as $model_name=>$model) {
 		$properties = [];
