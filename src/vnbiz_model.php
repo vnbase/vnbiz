@@ -1069,6 +1069,24 @@ class Model {
         $this->db_before_create($func_validate_json);
         $this->db_before_update($func_validate_json);
 
+		$this->db_after_get(function (&$context) use ($field_names) {
+            $model = &$context['model'];
+
+            foreach ($field_names as $field_name) {
+                if (isset($model[$field_name])) {
+                    $value = vnbiz_get_key($model, $field_name);
+                    if (is_string($value)) {
+                        $arr = json_decode($value, true);
+                        if ($arr === false) {
+                            throw new VnBizError("$field_name must be json", 'invalid_model');
+                        } else {
+							$model[$field_name] = $arr ;
+						}
+                    }
+                }
+            }
+		});
+
         return $this;
     }
 
