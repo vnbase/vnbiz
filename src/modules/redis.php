@@ -33,7 +33,11 @@ function vnbiz_redis() {
     $redis = new \Redis();
     $GLOBALS['REDIS_CON'] = $redis;
 
-    $redis->pconnect(REDIS_HOST, REDIS_PORT);
+    if (defined(REDIS_PORT)) {
+        $redis->pconnect(REDIS_HOST, REDIS_PORT);
+    } else {
+        $redis->pconnect(REDIS_HOST);
+    }
 
     if (defined("REDIS_PASSWORD")) {
         if (REDIS_PASSWORD) {
