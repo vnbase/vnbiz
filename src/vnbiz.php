@@ -40,3 +40,31 @@ session_start();
 
 vnbiz()
 	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth', 'notification', 'redis', 'monitor');
+
+
+vnbiz_add_action('service_sys_schema', function (&$context) {
+	$models = [];
+	foreach (vnbiz()->models() as $model_name=>$model) {
+		$properties = [];
+		foreach ($model->schema()->schema as $field_name=>$field_def) {
+			$properties[] = [
+				'field_name' => $field_name,
+				'meta' => $field_def
+			];
+		}
+		$models[] = [
+			'model_name' => $model_name,
+			'meta' => [
+				'has_tags' => $model->schema()->has_tags,
+				'has_comments' => $model->schema()->has_comments,
+				'has_history' => $model->schema()->has_history,
+				'has_reviews' => $model->schema()->has_reviews,
+				'has_usermarks' => $model->schema()->has_usermarks,
+				'back_refs' => $model->schema()->back_refs,
+				'text_search' => $model->schema()->text_search,
+			],
+			'properties' => $properties
+		];
+	}
+	$context['models'] = $models;
+});

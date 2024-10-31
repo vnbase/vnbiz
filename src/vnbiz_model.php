@@ -19,6 +19,8 @@ class Schema {
 
 	public $has_trash = false;  // done
 
+	public $has_usermarks = [];  // done
+
 	public $back_refs = [];
 
     public $text_search = false;
@@ -735,6 +737,7 @@ class Model {
 			$this->int('number_of_' . $mark_type);
 			$default['number_of_' . $mark_type] = 0;
 		}
+		$this->schema()->has_usermarks = $mark_types;
 		$this->default($default);
 
 		vnbiz_add_action("db_after_create_usermark", function (&$context) use ($model_name, $mark_types) {
@@ -1261,7 +1264,7 @@ class Model {
 		foreach ($field_names as $field_name) {
 			vnbiz_assure_valid_name($field_name);
 
-			$this->schema->add_field($field_name, 'uint');
+			$this->schema->add_field($field_name, 'datetime');
 		}
 
 		//TODO: validate datetime

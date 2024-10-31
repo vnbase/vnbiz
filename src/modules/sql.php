@@ -53,7 +53,7 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			$sql_type = 'DATE';
 			break;
 		case 'datetime':
-			$sql_type = 'DATETIME(3)';
+			$sql_type = 'BIGINT UNSIGNED';
 			break;
 		case 'int':
 			$sql_type = 'BIGINT';
