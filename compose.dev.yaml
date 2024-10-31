@@ -17,8 +17,10 @@ services:
     volumes:
       - ./src:/var/www/html/src
       - ./test:/var/www/html/test
+      - ./example:/var/www/html/example
     depends_on:
       - mysql8
+      - redis7
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -78,6 +80,11 @@ services:
     ports:
       - 9090:80
 
+  redis7:
+    image: redis:7.4.1-alpine
+    restart: always
+    ports:
+      - 6379:6379
   minio:
     image: bitnami/minio:latest
     environment:

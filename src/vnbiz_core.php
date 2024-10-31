@@ -108,6 +108,8 @@ class VnBiz
 
 	private $models = [];
 
+	private $app_name;
+
 	private function __construct()
 	{
 		$this->actions = new Actions();
@@ -121,6 +123,16 @@ class VnBiz
 
 		return self::$_instance;
 	}
+
+	public function getAppName() {
+		return $this->app_name;
+	}
+
+	public function init_app($app_name) {
+		$this->app_name = $app_name;
+		return $this;
+	}
+
 
 	public function restful()
 	{
@@ -300,6 +312,16 @@ class VnBiz
 		define('MAILER_SMTP_PORT', $port);
 		define('MAILER_SMTP_USERNAME', $username);
 		define('MAILER_SMTP_PASSWORD', $password);
+
+		return $this;
+	}
+
+	public function init_redis($host, $username = null, $password = null, $port = 6379)
+	{
+		define('REDIS_HOST', $host);
+		define('REDIS_PORT', $port);
+		define('REDIS_USERNAME', $username);
+		define('REDIS_PASSWORD', $password);
 
 		return $this;
 	}

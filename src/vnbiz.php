@@ -30,6 +30,8 @@ include __DIR__ . '/modules/jsonschema.php';
 include __DIR__ . '/modules/typescriptschema.php';
 include __DIR__ . '/modules/oauth.php';
 include __DIR__ . '/modules/notification.php';
+include __DIR__ . '/modules/redis.php';
+include __DIR__ . '/modules/monitor.php';
 
 
 date_default_timezone_set("UTC");
@@ -37,4 +39,4 @@ ini_set('session.cookie_samesite', 'None');
 session_start();
 
 vnbiz()
-	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth', 'notification');
+	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth', 'notification', 'redis', 'monitor');

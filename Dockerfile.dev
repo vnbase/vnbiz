@@ -27,8 +27,6 @@ RUN --mount=type=bind,source=composer.json,target=composer.json \
     --mount=type=cache,target=/tmp/cache \
     composer install --no-interaction
 
-RUN ls
-RUN sleep 5s
 ################################################################################
 
 # Create a new stage for running the application that contains the minimal
@@ -74,17 +72,22 @@ RUN docker-php-ext-install pdo pdo_mysql curl
 # RUN docker-php-ext-install opcache
 
 RUN rm -rf /var/lib/apt/lists/* 
+
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
     #
 # Add PECL extensions, see
 # https://github.com/docker-library/docs/tree/master/php#pecl-extensions
 # This example adds the 'redis' and 'xdebug' extensions.
+RUN pecl install redis-5.3.7
+RUN echo "\nextension=redis.so \n" >> "$PHP_INI_DIR/php.ini" 
+
 # RUN pecl install redis-5.3.7 \
 #    && pecl install xdebug-3.2.1 \
 #    && docker-php-ext-enable redis xdebug
 # Use the default production configuration for PHP runtime arguments, see
 # https://github.com/docker-library/docs/tree/master/php#configuration
 #RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 # Copy the app dependencies from the previous install stage.
 COPY --from=deps /app/vendor /var/www/html/vendor
