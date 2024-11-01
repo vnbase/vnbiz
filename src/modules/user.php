@@ -68,7 +68,7 @@ function vnbiz_init_module_user()
         ->string('alias', 'first_name', 'last_name')
         ->s3_image('avatar', [50], [200])
         ->s3_image('cover', [640, 360], [820, 312])
-        ->string('email')
+        ->email('email')
         ->string('username') //TODO: validate
         ->string('timezone')
         ->string('fuid')

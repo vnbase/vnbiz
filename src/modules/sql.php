@@ -1,22 +1,22 @@
 <?php
 
 
-function vnbiz_sql_table_column_exists($table, $column)  
+function vnbiz_sql_table_column_exists($table, $column)
 {
 	try {
 		$rows = R::getAll("SHOW COLUMNS FROM `$table` LIKE '$column';");
 		return sizeof($rows) > 0;
-	} catch(Exception $ex) {
+	} catch (Exception $ex) {
 		return false;
 	}
 }
 
-function vnbiz_sql_table_index_exists($table, $index)  
+function vnbiz_sql_table_index_exists($table, $index)
 {
 	try {
 		$rows = R::getAll("SHOW INDEX FROM $table where Key_name = '$index';");
 		return sizeof($rows) > 0;
-	} catch(Exception $ex) {
+	} catch (Exception $ex) {
 		return false;
 	}
 }
@@ -63,6 +63,7 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			break;
 		case 'password':
 		case 'string':
+		case 'email':
 			$sql_type = 'VARCHAR(255)';
 			break;
 		case 'slug':

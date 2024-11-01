@@ -982,6 +982,38 @@ class Model {
 		return $this;
 	}
 
+	public function email() {
+		$field_names = func_get_args();
+
+		foreach ($field_names as $field_name) {
+			vnbiz_assure_valid_name($field_name);
+
+			$this->schema->add_field($field_name, 'email');
+		}
+
+		$func_validate_strings = function (&$context) use ($field_names) {
+			$model = &$context['model'];
+
+			foreach ($field_names as $field_name) {
+				if (isset($model[$field_name])) {
+					$value = $model[$field_name];
+					if (!is_string($value)) {
+						throw new VnBizError("$field_name must be string", 'invalid_model', [$field_name => 'Must be a string.']);
+					}
+					// var_dump($value);
+					if ($value && filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+						throw new VnBizError("$field_name must be email", 'invalid_model', [$field_name => 'Invalid email format.']);
+					}
+				}
+			}
+		};
+
+		$this->db_before_create($func_validate_strings);
+		$this->db_before_update($func_validate_strings);
+
+		return $this;
+	}
+
 	public function slug() {
 		$field_names = func_get_args();
 
@@ -1624,6 +1656,10 @@ class Model {
 
 		$upload_file = function (&$context) use ($field_name, $sizes) {
 			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				if (is_string($context['model'][$field_name])) {
+					unset($context['model'][$field_name]);
+					return;
+				}
 				$file_name = $context['model'][$field_name]['file_name'];
 				$file_size = $context['model'][$field_name]['file_size'];
 				$file_path = $context['model'][$field_name]['file_path'];
