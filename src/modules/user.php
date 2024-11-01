@@ -83,6 +83,7 @@ function vnbiz_init_module_user()
         ->unique('user_unique_username', ['username'])
         ->unique('user_unique_fuid', ['fuid'])
         ->require('email')
+        ->no_delete()
         ->text_search('alias', 'first_name', 'last_name', 'email', 'note', 'username')
         ->read_field_permission_or(['email', 'fuid', 'status', 'first_name', 'last_name'], ['super', 'user_read'], function (&$model) {
             $user = vnbiz_user();
@@ -91,7 +92,20 @@ function vnbiz_init_module_user()
             }
             return false;
         })
-        ->write_permission_or_user_id(['super', 'user_write'], 'id')
+        ->web_before_update(function (&$context) {
+            if (vnbiz_user_has_permissions('super', 'user_write')) {
+                return true;
+            }
+
+            $user = vnbiz_user();
+            if ($user && isset($context['filter']) && isset($context['filter']['id'])) {
+                if ($user && $user['id'] == vnbiz_decrypt_id($context['filter']['id'])) {
+                    return true;
+                }
+            }
+
+            return false;
+        })
 
     ;
     // ->text_search('alias', 'first_name', 'last_name', 'email', 'description',);
