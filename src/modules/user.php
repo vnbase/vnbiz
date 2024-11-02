@@ -65,6 +65,12 @@ function vnbiz_init_module_user()
         ->default([
             'username' => 'u' . vnbiz_random_string()
         ])
+        ->ui([
+            'icon' => 'person',
+            'photo' => 'avatar',
+            'title' => 'alias',
+            'subtitle' => 'email'
+        ])
         ->string('alias', 'first_name', 'last_name')
         ->s3_image('avatar', [50], [200])
         ->s3_image('cover', [640, 360], [820, 312])

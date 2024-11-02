@@ -9,6 +9,7 @@ function vnbiz_init_module_usermark()
 		->model_id('model_id')
 		->string('mark_type')
 		->author()
+		->no_update()
 		->require('created_by', 'mark_type', 'model_name', 'model_id')
 		->db_before_create(function ($context) {
 			vnbiz_assure_model_name_exists($context['model']['model_name']);

@@ -4,7 +4,8 @@ namespace VnBiz;
 
 use Error, R;
 
-class Schema {
+class Schema
+{
 	public $model_name;
 
 	public $schema = [];
@@ -15,7 +16,7 @@ class Schema {
 
 	public $has_history = false; //done
 
-    public $has_reviews = false;    //TODO
+	public $has_reviews = false;    //TODO
 
 	public $has_trash = false;  // done
 
@@ -23,17 +24,21 @@ class Schema {
 
 	public $back_refs = [];
 
-    public $text_search = false;
+	public $text_search = false;
+	public $ui_meta = [];
 
-	public function __construct($model_name) {
+	public function __construct($model_name)
+	{
 		$this->model_name = $model_name;
 	}
 
-	public function model_name() {
+	public function model_name()
+	{
 		return $this->model_name;
 	}
 
-	public function add_field($field_name, $type) {
+	public function add_field($field_name, $type)
+	{
 		if (isset($this->schema[$field_name])) {
 			throw new Error("field $field_name already existed");
 		}
@@ -50,7 +55,8 @@ class Schema {
 		];
 	}
 
-	public function set_field($field_name, $desc) {
+	public function set_field($field_name, $desc)
+	{
 
 		if (isset($this->schema[$field_name])) {
 			$this->schema[$field_name] = array_merge($this->schema[$field_name], $desc);
@@ -60,7 +66,8 @@ class Schema {
 		$this->schema[$field_name] = $desc;
 	}
 
-	public function get_fields_by_type($type) {
+	public function get_fields_by_type($type)
+	{
 		$result = [];
 		// echo json_encode($this->schema);
 		foreach ($this->schema as $field_name => $field_def) {
@@ -71,11 +78,13 @@ class Schema {
 		return $result;
 	}
 
-	public function get_field_names() {
+	public function get_field_names()
+	{
 		return array_keys($this->schema);
 	}
 
-	public function crop(&$model) {
+	public function crop(&$model)
+	{
 		$new_model = [];
 
 		foreach ($this->get_field_names() as $field_name) {
@@ -89,10 +98,12 @@ class Schema {
 }
 
 
-class Model {
+class Model
+{
 	private $schema;
 
-	public function __construct($model_name) {
+	public function __construct($model_name)
+	{
 		$this->schema = new Schema($model_name);
 
 		// $this->crop();
@@ -101,15 +112,18 @@ class Model {
 		$this->id();
 	}
 
-	public function schema() {
+	public function schema()
+	{
 		return $this->schema;
 	}
 
-	public function get_schema_details() {
+	public function get_schema_details()
+	{
 		return $this->schema->schema;
 	}
 
-	public function get_model_field_names() {
+	public function get_model_field_names()
+	{
 		return array_keys($this->schema->schema);
 	}
 
@@ -132,15 +146,21 @@ class Model {
 	// 	return $this;
 	// }
 
-	private function web_secure_id($field_name) {
+	public function ui($meta)
+	{
+		$this->schema()->ui_meta = $meta;
+		return $this;
+	}
+
+	private function web_secure_id($field_name)
+	{
 		$encrypt_id = function (&$context) use ($field_name) {
 			if (isset($context['filter']) && isset($context['filter'][$field_name]) && $context['filter'][$field_name]) {
 				if (is_array($context['filter'][$field_name])) {
-					$context['filter'][$field_name] = vnbiz_encrypt_ids($context['filter'][$field_name]);	
+					$context['filter'][$field_name] = vnbiz_encrypt_ids($context['filter'][$field_name]);
 				} else {
 					$context['filter'][$field_name] = vnbiz_encrypt_id($context['filter'][$field_name]);
 				}
-				
 			}
 			if (isset($context['model']) && isset($context['model'][$field_name]) && $context['model'][$field_name]) {
 				$context['model'][$field_name] = vnbiz_encrypt_id($context['model'][$field_name]);
@@ -152,7 +172,7 @@ class Model {
 				$context['meta'][$field_name] = vnbiz_encrypt_id($context['meta'][$field_name]);
 			}
 			if (isset($context['models'])) {
-				foreach($context['models'] as &$model) {
+				foreach ($context['models'] as &$model) {
 					if (isset($model[$field_name]) && $model[$field_name]) {
 						$model[$field_name] = vnbiz_encrypt_id($model[$field_name]);
 					}
@@ -165,7 +185,7 @@ class Model {
 					if (is_array($context['filter'][$field_name])) {
 						$arr = $context['filter'][$field_name];
 						$new_arr = [];
-						foreach($arr as $key=>$value) { // $gt $lt $e
+						foreach ($arr as $key => $value) { // $gt $lt $e
 							$new_arr[$key] = vnbiz_decrypt_id($value);
 						}
 						$context['filter'][$field_name] = $new_arr;
@@ -173,9 +193,8 @@ class Model {
 						$context['filter'][$field_name] = vnbiz_decrypt_ids($context['filter'][$field_name]);
 					}
 				} else {
-					$context['filter'][$field_name] = vnbiz_decrypt_id($context['filter'][$field_name]);	
+					$context['filter'][$field_name] = vnbiz_decrypt_id($context['filter'][$field_name]);
 				}
-				
 			}
 			if (isset($context['model']) && isset($context['model'][$field_name]) && $context['model'][$field_name]) {
 				$context['model'][$field_name] = vnbiz_decrypt_id($context['model'][$field_name]);
@@ -187,7 +206,7 @@ class Model {
 				$context['meta'][$field_name] = vnbiz_decrypt_id($context['meta'][$field_name]);
 			}
 			if (isset($context['models'])) {
-				foreach($context['models'] as &$model) {
+				foreach ($context['models'] as &$model) {
 					if (isset($model[$field_name]) && $model[$field_name]) {
 						$model[$field_name] = vnbiz_decrypt_id($model[$field_name]);
 					}
@@ -208,18 +227,44 @@ class Model {
 		return $this;
 	}
 
-	private function id() {
+	private function id()
+	{
 		$this->model_id('id');
+		$this->no_update('id');
 		return $this;
 	}
 
-	public function has_v() {
+	public function web_readonly()
+	{
+		$field_names = func_get_args();
 
+		foreach ($field_names as $field_name) {
+			if (!isset($this->schema()->schema[$field_name])) {
+				$this->schema()->schema[$field_name] = [];
+			}
+			$this->schema()->schema[$field_name]['meta'] = [
+				'readonly' => true
+			];
+		}
+		$remove_web_readonly_fields = function (&$context) use ($field_names) {
+			foreach ($field_names as $field_name) {
+				if (isset($context['model']) && $context['model'][$field_name]) {
+					unset($context['model'][$field_name]);
+				}
+			}
+		};
+		$this->web_before_create($remove_web_readonly_fields);
+		$this->web_before_update($remove_web_readonly_fields);
+	}
+
+	public function has_v()
+	{
 		$this->uint("v");
 		$this->default(['v' => 1]);
+		$this->web_readonly('has_v');
 
 		$this->db_before_update(function (&$context) {
-			if(isset($context['filter']) && isset($context['filter']['v'])) {
+			if (isset($context['filter']) && isset($context['filter']['v'])) {
 				if ($context['old_model']['v'] != $context['filter']['v']) {
 					throw new VnBizError("Current value is " . $context['old_model']['v'] . '. But ' . $context['filter']['v'] . ' is provided.', 'invalid_v');
 				}
@@ -230,7 +275,8 @@ class Model {
 		return $this;
 	}
 
-	public function model_name() {
+	public function model_name()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -242,7 +288,8 @@ class Model {
 		return $this;
 	}
 
-	public function model_id() {
+	public function model_id()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -257,8 +304,10 @@ class Model {
 		return $this;
 	}
 
-	public function time_at() {
+	public function time_at()
+	{
 		$this->datetime('created_at', 'updated_at');
+		$this->web_readonly('created_at', 'updated_at');
 
 		$model_name = $this->schema->model_name;
 		$func_created_at = function (&$context) {
@@ -281,7 +330,8 @@ class Model {
 		return $this;
 	}
 
-	public function default($values) {
+	public function default($values)
+	{
 		$func_set_default_values = function (&$context) use ($values) {
 			$model = &$context['model'];
 			foreach ($values as $key => $value) {
@@ -296,94 +346,97 @@ class Model {
 		return $this;
 	}
 
-	public function text_search() {
-        $field_names = func_get_args();
-        $model_name = $this->schema->model_name;
+	public function text_search()
+	{
+		$field_names = func_get_args();
+		$model_name = $this->schema->model_name;
 
-        if ($this->schema()->text_search) {
-            throw new VnBizError('Text search already defined');
-        }
-        $this->schema()->text_search = $field_names;
+		if ($this->schema()->text_search) {
+			throw new VnBizError('Text search already defined');
+		}
+		$this->schema()->text_search = $field_names;
 
-         vnbiz_add_action('sql_gen_index', function (&$context) use ($model_name, $field_names) {
-         	isset($context['sql']) ?: $context['sql'] = '';
+		vnbiz_add_action('sql_gen_index', function (&$context) use ($model_name, $field_names) {
+			isset($context['sql']) ?: $context['sql'] = '';
 
-            $index_name = join('_', $field_names);
-            $index_name = substr($index_name, 0, 30) . '_' . md5($index_name);
+			$index_name = join('_', $field_names);
+			$index_name = substr($index_name, 0, 30) . '_' . md5($index_name);
 
-            $fields = join(',', $field_names);
+			$fields = join(',', $field_names);
 			if (!vnbiz_sql_table_index_exists($model_name, $index_name)) {
 				$context['sql'] .= "
 					CREATE FULLTEXT INDEX $index_name ON `$model_name` ($fields);
 				";
 			}
-         });
+		});
 
-        return $this;
-    }
+		return $this;
+	}
 
-	public function has_history($remove_on_delete = true) {
-        $model_name = $this->schema->model_name;
+	public function has_history($remove_on_delete = true)
+	{
+		$model_name = $this->schema->model_name;
 
-        $this->schema()->has_history = true;
+		$this->schema()->has_history = true;
 
-	    $this->db_after_update(function (&$context) use ($model_name) {
-	        $model = &$context['old_model'];
-            $c = [
-                'model_name' => 'history',
-                'model' => [
-                    'model_id' => $model['id'],
-                    'model_name' => $model_name,
-                    'model_json' => json_encode($model)
+		$this->db_after_update(function (&$context) use ($model_name) {
+			$model = &$context['old_model'];
+			$c = [
+				'model_name' => 'history',
+				'model' => [
+					'model_id' => $model['id'],
+					'model_name' => $model_name,
+					'model_json' => json_encode($model)
 				],
 				'in_trans' => true
-            ];
-            vnbiz_do_action('model_create', $c);
-        });
+			];
+			vnbiz_do_action('model_create', $c);
+		});
 
-	    if ($remove_on_delete) {
-            $this->db_after_delete(function (&$context) use ($model_name) {
-                $model = &$context['old_model'];
-                R::exec('DELETE FROM `history` WHERE model_name=? AND model_id=?', [$model_name, $model['id']]);
+		if ($remove_on_delete) {
+			$this->db_after_delete(function (&$context) use ($model_name) {
+				$model = &$context['old_model'];
+				R::exec('DELETE FROM `history` WHERE model_name=? AND model_id=?', [$model_name, $model['id']]);
+			});
+		}
 
-            });
-        }
+		return $this;
+	}
 
-        return $this;
-    }
+	public function has_trash()
+	{
+		$this->schema()->has_trash = true;
+		$this->bool('is_trash');
 
-	 public function has_trash() {
-	    $this->schema()->has_trash = true;
-	    $this->bool('is_trash');
+		$func_set_default_is_trash = function (&$context) {
+			if (!isset($context['model']['is_trash'])) {
+				$context['model']['is_trash'] = false;
+			}
+		};
 
-	 	$func_set_default_is_trash = function (&$context) {
-	 		if (!isset($context['model']['is_trash'])) {
-	 			$context['model']['is_trash'] = false;
-	 		}
-	 	};
+		$this->db_before_create($func_set_default_is_trash);
 
-	 	$this->db_before_create($func_set_default_is_trash);
+		$func_filter_update = function (&$context) {
+			$meta = $context['meta'] ?? [];
+			$include_trash = $meta['include_trash'] ?? false;
+			if ($include_trash) {
+				return;
+			}
 
-	 	$func_filter_update = function (&$context) {
-	 	    $meta = $context['meta'] ?? [];
-	 	    $include_trash = $meta['include_trash'] ?? false;
-	 	    if ($include_trash) {
-	 	        return;
-            }
+			if (!isset($context['filter'])) {
+				$context['filter'] = [];
+			}
+			$context['filter']['is_trash'] = false;
+		};
 
-	 		if (!isset($context['filter'])) {
-	 			$context['filter'] = [];
-	 		}
-	 		$context['filter']['is_trash'] = false;
-	 	};
+		$this->db_before_update($func_filter_update);
+		$this->db_before_find($func_filter_update);
 
-	 	$this->db_before_update($func_filter_update);
-	 	$this->db_before_find($func_filter_update);
+		return $this;
+	}
 
-	 	return $this;
-	 }
-
-	public function has_reviews() {
+	public function has_reviews()
+	{
 		// $model_name = $this->schema->model_name;
 		$this->schema()->has_reviews = true;
 
@@ -409,8 +462,9 @@ class Model {
 	}
 
 
-	public function has_tags() {
-	    $this->schema()->has_tags = true;
+	public function has_tags()
+	{
+		$this->schema()->has_tags = true;
 		$model_name = $this->schema->model_name;
 		$func_set_tags = function (&$context) use ($model_name) {
 			$old_model = vnbiz_get_var($context['old_model'], []);
@@ -463,7 +517,7 @@ class Model {
 
 
 		$this->db_after_delete($func_delete_model_tags);
-		
+
 		$before_db_before_exec = function (&$context) use ($model_name) {
 			$db_context = &$context['db_context'];
 			$tags = [];
@@ -473,22 +527,23 @@ class Model {
 			if (sizeof($tags) > 0) {
 				$query = &$db_context['conditions_query'];
 				$param = &$db_context['conditions_param'];
-				$query[] = "(id IN (SELECT mt.model_id FROM modeltag mt INNER JOIN tag t ON t.id=mt.tag_id AND mt.model_name=? AND t.name IN (" . R::genSlots( $tags ) . ") GROUP BY mt.model_id HAVING COUNT(t.id)=? ))";
+				$query[] = "(id IN (SELECT mt.model_id FROM modeltag mt INNER JOIN tag t ON t.id=mt.tag_id AND mt.model_name=? AND t.name IN (" . R::genSlots($tags) . ") GROUP BY mt.model_id HAVING COUNT(t.id)=? ))";
 				$param[] = $model_name;
 				array_push($param, ...$tags);
 				$param[] = sizeof($tags);
 			}
-			
+
 			// var_dump($context);
 		};
-		
+
 		vnbiz_add_action("db_before_find_exe_$model_name", $before_db_before_exec);
 		vnbiz_add_action("db_before_count_exe_$model_name", $before_db_before_exec);
 
 		return $this;
 	}
 
-	public function web_before_create($func) {
+	public function web_before_create($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_before_model_create_$model_name", $func);
@@ -496,7 +551,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_before_update($func) {
+	public function web_before_update($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_before_model_update_$model_name", $func);
@@ -504,7 +560,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_before_delete($func) {
+	public function web_before_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_before_model_delete_$model_name", $func);
@@ -512,7 +569,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_before_find($func) {
+	public function web_before_find($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_before_model_find_$model_name", $func);
@@ -520,7 +578,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_after_create($func) {
+	public function web_after_create($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_after_model_create_$model_name", $func);
@@ -528,7 +587,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_after_update($func) {
+	public function web_after_update($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_after_model_update_$model_name", $func);
@@ -536,7 +596,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_after_delete($func) {
+	public function web_after_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_after_model_delete_$model_name", $func);
@@ -544,7 +605,8 @@ class Model {
 		return $this;
 	}
 
-	public function web_after_find($func) {
+	public function web_after_find($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("web_after_model_find_$model_name", $func);
@@ -552,7 +614,8 @@ class Model {
 		return $this;
 	}
 
-	public function db_begin_create($func) {
+	public function db_begin_create($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("db_before_create", function (&$context) use ($func, $model_name) {
@@ -564,7 +627,8 @@ class Model {
 		return $this;
 	}
 
-	public function db_begin_update($func) {
+	public function db_begin_update($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("db_before_update", function (&$context) use ($func, $model_name) {
@@ -576,7 +640,8 @@ class Model {
 		return $this;
 	}
 
-	public function db_begin_find($func) {
+	public function db_begin_find($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("db_before_find", function (&$context) use ($func, $model_name) {
@@ -588,7 +653,8 @@ class Model {
 		return $this;
 	}
 
-	public function db_begin_delete($func) {
+	public function db_begin_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("db_before_delete", function (&$context) use ($func, $model_name) {
@@ -600,7 +666,8 @@ class Model {
 		return $this;
 	}
 
-	public function db_before_create($func) {
+	public function db_before_create($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action("db_before_create_$model_name", $func);
@@ -608,83 +675,95 @@ class Model {
 		return $this;
 	}
 
-	public function db_after_create($func) {
+	public function db_after_create($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_create_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_commit_create($func) {
+	public function db_after_commit_create($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_commit_create_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_get($func) {
+	public function db_after_get($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_get_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_before_find($func) {
+	public function db_before_find($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_before_find_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_find($func) {
+	public function db_after_find($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_find_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_before_update($func) {
+	public function db_before_update($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_before_update_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_update($func) {
+	public function db_after_update($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_update_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_commit_update($func) {
+	public function db_after_commit_update($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_commit_update_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_before_delete($func) {
+	public function db_before_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_before_delete_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_delete($func) {
+	public function db_after_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("db_after_delete_$model_name", $func);
 
 		return $this;
 	}
 
-	public function db_after_commit_delete($func) {
+	public function db_after_commit_delete($func)
+	{
 		$model_name = $this->schema->model_name;
 
 		return $this;
 	}
 
-	public function on_new_ref($func) {
+	public function on_new_ref($func)
+	{
 		$model_name = $this->schema->model_name;
 		vnbiz_add_action("model_new_ref_$model_name", $func);
 
@@ -701,7 +780,8 @@ class Model {
 	// 	$this->db_after_delete();
 	// }
 
-	public function has_comments($comment_enable = true /*default*/) {
+	public function has_comments($comment_enable = true /*default*/)
+	{
 		$model_name = $this->schema->model_name;
 		$this->schema()->has_comments = true;
 
@@ -722,7 +802,8 @@ class Model {
 		return $this;
 	}
 
-	public function has_usermarks() {
+	public function has_usermarks()
+	{
 		$model_name = $this->schema->model_name;
 
 		$mark_types = func_get_args();
@@ -835,7 +916,8 @@ class Model {
 		return $this;
 	}
 
-	public function require() {
+	public function require()
+	{
 		$field_names = func_get_args();
 
 		$func_validate_create = function ($context) use ($field_names) {
@@ -888,7 +970,8 @@ class Model {
 		return $this;
 	}
 
-	public function bool() {
+	public function bool()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -922,7 +1005,8 @@ class Model {
 		return $this;
 	}
 
-	public function date() {
+	public function date()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -952,7 +1036,8 @@ class Model {
 		return $this;
 	}
 
-	public function string() {
+	public function string()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -982,7 +1067,8 @@ class Model {
 		return $this;
 	}
 
-	public function email() {
+	public function email()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1014,7 +1100,8 @@ class Model {
 		return $this;
 	}
 
-	public function slug() {
+	public function slug()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1029,7 +1116,7 @@ class Model {
 			foreach ($field_names as $field_name) {
 				if (isset($model[$field_name])) {
 					$value = $model[$field_name];
-					if(preg_match('/^[a-z][a-z0-9_-]*$/', $value) == false) {
+					if (preg_match('/^[a-z][a-z0-9_-]*$/', $value) == false) {
 						throw new VnBizError("$field_name must be slug", 'invalid_model');
 					}
 					// var_dump($value);
@@ -1044,7 +1131,8 @@ class Model {
 		return $this;
 	}
 
-	public function text() {
+	public function text()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1058,7 +1146,7 @@ class Model {
 
 			foreach ($field_names as $field_name) {
 				if (isset($model[$field_name])) {
-                    $value = vnbiz_get_key($model, $field_name);
+					$value = vnbiz_get_key($model, $field_name);
 					if (isset($model[$field_name]) && $value !== null && !is_string($value)) {
 						throw new VnBizError("$field_name must be string", 'invalid_model');
 					}
@@ -1072,60 +1160,62 @@ class Model {
 		return $this;
 	}
 
-    public function json() {
-        $field_names = func_get_args();
+	public function json()
+	{
+		$field_names = func_get_args();
 
-        foreach ($field_names as $field_name) {
-            vnbiz_assure_valid_name($field_name);
+		foreach ($field_names as $field_name) {
+			vnbiz_assure_valid_name($field_name);
 
-            $this->schema->add_field($field_name, 'json');
-        }
+			$this->schema->add_field($field_name, 'json');
+		}
 
-        $func_validate_json = function (&$context) use ($field_names) {
-            $model = &$context['model'];
+		$func_validate_json = function (&$context) use ($field_names) {
+			$model = &$context['model'];
 
-            foreach ($field_names as $field_name) {
-                if (isset($model[$field_name])) {
-                    $value = vnbiz_get_key($model, $field_name);
-                    if (is_string($value)) {
-                        $arr = json_decode($value, true);
-                        if ($arr === false) {
-                            throw new VnBizError("$field_name must be json", 'invalid_model');
-                        }
-                    } else if (is_array($value) || is_object($value)) {
-                        $model[$field_name] = json_encode($value);
-                    } else {
-                        throw new VnBizError("$field_name must be json", 'invalid_model');
-                    }
-                }
-            }
-        };
+			foreach ($field_names as $field_name) {
+				if (isset($model[$field_name])) {
+					$value = vnbiz_get_key($model, $field_name);
+					if (is_string($value)) {
+						$arr = json_decode($value, true);
+						if ($arr === false) {
+							throw new VnBizError("$field_name must be json", 'invalid_model');
+						}
+					} else if (is_array($value) || is_object($value)) {
+						$model[$field_name] = json_encode($value);
+					} else {
+						throw new VnBizError("$field_name must be json", 'invalid_model');
+					}
+				}
+			}
+		};
 
-        $this->db_before_create($func_validate_json);
-        $this->db_before_update($func_validate_json);
+		$this->db_before_create($func_validate_json);
+		$this->db_before_update($func_validate_json);
 
 		$this->db_after_get(function (&$context) use ($field_names) {
-            $model = &$context['model'];
+			$model = &$context['model'];
 
-            foreach ($field_names as $field_name) {
-                if (isset($model[$field_name])) {
-                    $value = vnbiz_get_key($model, $field_name);
-                    if (is_string($value)) {
-                        $arr = json_decode($value, true);
-                        if ($arr === false) {
-                            throw new VnBizError("$field_name must be json", 'invalid_model');
-                        } else {
-							$model[$field_name] = $arr ;
+			foreach ($field_names as $field_name) {
+				if (isset($model[$field_name])) {
+					$value = vnbiz_get_key($model, $field_name);
+					if (is_string($value)) {
+						$arr = json_decode($value, true);
+						if ($arr === false) {
+							throw new VnBizError("$field_name must be json", 'invalid_model');
+						} else {
+							$model[$field_name] = $arr;
 						}
-                    }
-                }
-            }
+					}
+				}
+			}
 		});
 
-        return $this;
-    }
+		return $this;
+	}
 
-	public function int() {
+	public function int()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1157,7 +1247,8 @@ class Model {
 		return $this;
 	}
 
-	public function uint() {
+	public function uint()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1192,7 +1283,8 @@ class Model {
 		return $this;
 	}
 
-	public function float() {
+	public function float()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1218,7 +1310,8 @@ class Model {
 	}
 
 
-	public function enum($field_name, $options, $default_value = null) {
+	public function enum($field_name, $options, $default_value = null)
+	{
 		vnbiz_assure_valid_name($field_name);
 		$this->schema->add_field($field_name, 'enum');
 		$this->schema->set_field($field_name, [
@@ -1245,7 +1338,8 @@ class Model {
 		return $this;
 	}
 
-	public function unique($index_key, $field_names) {
+	public function unique($index_key, $field_names)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action('sql_gen_index', function (&$context) use ($model_name, $index_key, $field_names) {
@@ -1267,7 +1361,8 @@ class Model {
 		return $this;
 	}
 
-	public function index($index_key, $field_names) {
+	public function index($index_key, $field_names)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_add_action('sql_gen_index', function (&$context) use ($model_name, $index_key, $field_names) {
@@ -1290,7 +1385,8 @@ class Model {
 	}
 
 
-	public function datetime() {
+	public function datetime()
+	{
 		$field_names = func_get_args();
 
 		foreach ($field_names as $field_name) {
@@ -1310,7 +1406,6 @@ class Model {
 					// $date_time = new DateTime($value, new DateTimeZone('UTC') );
 					// $model[$field_name] = $date_time->getTimestamp();
 					if (preg_match("/^[0-9]*$/i", $value)) {
-
 					} else {
 						$time = new \DateTime($value, new \DateTimeZone('UTC'));
 						$model[$field_name] = (int)$time->format('Uv');
@@ -1324,24 +1419,25 @@ class Model {
 
 		$this->db_before_create($func_validate_datetime);
 		$this->db_before_update($func_validate_datetime);
-		
+
 		$func_alter_datetime = function (&$context) use ($field_name) {
 			$models = &$context['models'];
-			
+
 			foreach ($models as &$model) {
 				if (is_string($model[$field_name])) {
 					$model[$field_name] = intval($model[$field_name]);
 				}
 			}
 		};
-		
+
 		$this->db_after_find($func_alter_datetime);
 
 		return $this;
 	}
 
 
-	public function status($field_name, $status_flow, $default_value) {
+	public function status($field_name, $status_flow, $default_value)
+	{
 		vnbiz_assure_valid_name($field_name);
 
 		$this->schema->set_field($field_name, [
@@ -1394,7 +1490,8 @@ class Model {
 		return $this;
 	}
 
-	function ref($field_name, $ref_model_name) {
+	function ref($field_name, $ref_model_name)
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_assure_valid_name($field_name);
@@ -1434,7 +1531,8 @@ class Model {
 		return $this;
 	}
 
-	function no_create() {
+	function no_create()
+	{
 		$field_names = func_get_args();
 
 		$func_validate = function (&$context) use ($field_names) {
@@ -1455,11 +1553,21 @@ class Model {
 
 		$this->db_before_create($func_validate);
 
-        return $this;
+		return $this;
 	}
 
-	function no_update() {
+	function no_update()
+	{
 		$field_names = func_get_args();
+
+		foreach ($field_names as $field_name) {
+			if (!isset($this->schema()->schema[$field_name])) {
+				$this->schema()->schema[$field_name] = [];
+			}
+			$this->schema()->schema[$field_name]['meta'] = [
+				'readonly' => true
+			];
+		}
 
 		$func_validate = function (&$context) use ($field_names) {
 			$model_name = $this->schema->model_name;
@@ -1482,7 +1590,8 @@ class Model {
 		return $this;
 	}
 
-	function back_ref_count($field_name, $ref_model_name, $ref_field_name, $filter = []) {
+	function back_ref_count($field_name, $ref_model_name, $ref_field_name, $filter = [])
+	{
 		$model_name = $this->schema->model_name;
 
 		vnbiz_assure_valid_name($field_name);
@@ -1493,7 +1602,7 @@ class Model {
 		$this->int($field_name);
 		$this->no_update($field_name);
 
-		$this->db_before_create(function (&$context) use($field_name) {
+		$this->db_before_create(function (&$context) use ($field_name) {
 			$context['model'][$field_name] = 0;
 		});
 
@@ -1560,7 +1669,8 @@ class Model {
 	// 	return $this;
 	// }
 
-	function no_delete() {
+	function no_delete()
+	{
 		$model_name = $this->schema->model_name();
 
 		$func_stop_delete = function () use ($model_name) {
@@ -1572,10 +1682,12 @@ class Model {
 		return $this;
 	}
 
-	function author() {
+	function author()
+	{
 
 		$this->ref('created_by', 'user');
 		$this->ref('updated_by', 'user');
+		$this->web_readonly('created_by', 'updated_by');
 
 		$func_set_create_author = function (&$context) {
 			unset($context['model']['updated_by']);
@@ -1603,7 +1715,8 @@ class Model {
 		return $this;
 	}
 
-	function password() {
+	function password()
+	{
 		$field_names = func_get_args();
 		$model_name = $this->schema->model_name();
 
@@ -1630,7 +1743,7 @@ class Model {
 		$this->db_before_update($func_hash_password);
 
 		$func_unset_password = function (&$context) use ($field_names) {
-			foreach($context['models'] as &$model) {
+			foreach ($context['models'] as &$model) {
 				foreach ($field_names as $field_name) {
 					if (isset($model[$field_name])) {
 						unset($model[$field_name]);
@@ -1644,11 +1757,12 @@ class Model {
 		return $this;
 	}
 
-	function s3_image($field_name, ...$sizes) {
+	function s3_image($field_name, ...$sizes)
+	{
 		$this->schema->add_field($field_name, 'image');
 
 		$image_sizes = [];
-		for($x = 0; $x < sizeof($sizes); $x++) {
+		for ($x = 0; $x < sizeof($sizes); $x++) {
 			$image_sizes[$x] = $sizes[$x];
 			sizeof($image_sizes[$x]) > 1 ?: $image_sizes[$x][1] = $image_sizes[$x][0];
 		}
@@ -1666,7 +1780,7 @@ class Model {
 				$file_type = $context['model'][$field_name]['file_type'];
 
 				$context['temp_files'] = [];
-				
+
 				// $image = new \Gmagick($file_path);
 				$image = new \VnbizImage($file_path);
 
@@ -1680,7 +1794,7 @@ class Model {
 					'height' => $image->get_Height(),
 				];
 
-				for($i=1; $i < 10; $i++) {
+				for ($i = 1; $i < 10; $i++) {
 					if ($i - 1 < sizeof($sizes)) {
 						$size = $sizes[$i - 1];
 						sizeof($size) > 1 ?: $size[1] = $size[0];
@@ -1704,11 +1818,10 @@ class Model {
 
 		$delete_files = function (&$context) {
 			if (isset($context['temp_files'])) {
-				foreach($context['temp_files'] as $path) {
+				foreach ($context['temp_files'] as $path) {
 					try {
 						unlink($path);
 					} catch (\Exception $e) {
-
 					}
 				}
 			}
@@ -1717,7 +1830,7 @@ class Model {
 		$this->db_after_commit_create($delete_files);
 		$this->db_after_commit_update($delete_files);
 
-		$this->db_after_get(function (&$context) use ($field_name, $image_sizes){
+		$this->db_after_get(function (&$context) use ($field_name, $image_sizes) {
 			if (isset($context['model'][$field_name])) {
 				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
 				$context['model']['@' . $field_name] = &$s3;
@@ -1731,8 +1844,9 @@ class Model {
 
 		return $this;
 	}
-	
-	public function s3_file($field_name) {
+
+	public function s3_file($field_name)
+	{
 		$this->schema->add_field($field_name, 'file');
 
 		$upload_file = function (&$context) use ($field_name) {
@@ -1754,7 +1868,7 @@ class Model {
 		$this->db_begin_create($upload_file);
 		$this->db_begin_update($upload_file);
 
-		$this->db_after_get(function (&$context) use ($field_name){
+		$this->db_after_get(function (&$context) use ($field_name) {
 			if (isset($context['model'][$field_name])) {
 				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
 				$context['model']['@' . $field_name] = &$s3;
@@ -1764,7 +1878,8 @@ class Model {
 		return $this;
 	}
 
-	public function create_permission(...$permissions) {
+	public function create_permission(...$permissions)
+	{
 		$this->web_before_create(function (&$context) use ($permissions) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
@@ -1774,12 +1889,13 @@ class Model {
 		return $this;
 	}
 
-	public function create_permission_or($permissions, $func) {
+	public function create_permission_or($permissions, $func)
+	{
 		$this->web_before_create(function (&$context) use ($permissions, $func) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			if (vnbiz_user_has_permissions(...$permissions)) {
 				return;
 			}
@@ -1787,13 +1903,14 @@ class Model {
 			if ($func($context)) {
 				return;
 			}
-			
+
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		});
 		return $this;
 	}
 
-	public function update_permission(...$permissions) {
+	public function update_permission(...$permissions)
+	{
 		$this->web_before_update(function (&$context) use ($permissions) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
@@ -1803,12 +1920,13 @@ class Model {
 		return $this;
 	}
 
-	public function update_permission_or($permissions, $func) {
+	public function update_permission_or($permissions, $func)
+	{
 		$this->web_before_update(function (&$context) use ($permissions, $func) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			if (vnbiz_user_has_permissions(...$permissions)) {
 				return;
 			}
@@ -1816,29 +1934,31 @@ class Model {
 			if ($func($context)) {
 				return;
 			}
-			
+
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		});
 		return $this;
 	}
 
-	public function delete_permission(...$permissions) {
+	public function delete_permission(...$permissions)
+	{
 		$this->web_before_delete(function (&$context) use ($permissions) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			vnbiz_assure_user_has_permissions(...$permissions);
 		});
 		return $this;
 	}
 
-	public function delete_permission_or($permissions, $func) {
+	public function delete_permission_or($permissions, $func)
+	{
 		$this->web_before_delete(function (&$context) use ($permissions, $func) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			if (vnbiz_user_has_permissions(...$permissions)) {
 				return;
 			}
@@ -1846,13 +1966,14 @@ class Model {
 			if ($func($context)) {
 				return;
 			}
-			
+
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		});
 		return $this;
 	}
 
-	public function find_permission(...$permissions) {
+	public function find_permission(...$permissions)
+	{
 		$this->web_before_find(function (&$context) use ($permissions) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
@@ -1862,12 +1983,13 @@ class Model {
 		return $this;
 	}
 
-	public function find_permission_or($permissions, $func) {
+	public function find_permission_or($permissions, $func)
+	{
 		$this->web_before_find(function (&$context) use ($permissions, $func) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			if (vnbiz_user_has_permissions(...$permissions)) {
 				return;
 			}
@@ -1875,7 +1997,7 @@ class Model {
 			if ($func($context)) {
 				return;
 			}
-			
+
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		});
 		return $this;
@@ -1885,12 +2007,13 @@ class Model {
 	 * $func receives $context of the new created or updated model which refs to this one
 	 * use $context['model'][$context['ref_field_name']] to get id;
 	 */
-	public function ref_permission_or($permissions, $func) {
+	public function ref_permission_or($permissions, $func)
+	{
 		$check_ref_permission = function (&$context) use ($permissions, $func) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
+
 			if (vnbiz_user_has_permissions(...$permissions)) {
 				return;
 			}
@@ -1898,7 +2021,7 @@ class Model {
 			if ($func($context)) {
 				return;
 			}
-			
+
 			throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 		};
 
@@ -1908,79 +2031,85 @@ class Model {
 	}
 
 
-	public function read_permission(...$permissions) {
+	public function read_permission(...$permissions)
+	{
 		$this->find_permission(...$permissions);
 		return $this;
 	}
 
-	public function read_permission_or($permissions, $func) {
+	public function read_permission_or($permissions, $func)
+	{
 		$this->find_permission_or($permissions, $func);
 		return $this;
 	}
 
-	public function read_permission_or_user_id($permissions, $user_id_field_name) {
+	public function read_permission_or_user_id($permissions, $user_id_field_name)
+	{
 		$this->find_permission_or($permissions, function (&$context) use ($user_id_field_name) {
 			if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
 				return;
 			}
-			
-            $user = vnbiz_user();
-            if (!$user) {
-                return false;
-            }
-            
-            if (isset($context['filter']) ) {
-                if (isset($context['filter'][$user_id_field_name])) {
-                    return $context['filter'][$user_id_field_name] == $user['id'];
-                }
-            }
+
+			$user = vnbiz_user();
+			if (!$user) {
+				return false;
+			}
+
+			if (isset($context['filter'])) {
+				if (isset($context['filter'][$user_id_field_name])) {
+					return $context['filter'][$user_id_field_name] == $user['id'];
+				}
+			}
 			return false;
 		});
 		return $this;
 	}
 
-	public function write_permission(...$permissions) {
+	public function write_permission(...$permissions)
+	{
 		$this->create_permission(...$permissions);
 		$this->update_permission(...$permissions);
 		$this->delete_permission(...$permissions);
 		return $this;
 	}
 
-	public function write_permission_or($permissions, $func) {
+	public function write_permission_or($permissions, $func)
+	{
 		$this->create_permission_or($permissions, $func);
 		$this->update_permission_or($permissions, $func);
 		$this->delete_permission_or($permissions, $func);
 		return $this;
 	}
 
-	public function write_permission_or_user_id($permissions, $user_id_field_name) {
+	public function write_permission_or_user_id($permissions, $user_id_field_name)
+	{
 		$create_func = function (&$context) use ($user_id_field_name) {
-            $user = vnbiz_user();
-            if (!$user) {
-                return false;
-            }
-            
-            if (isset($context['model']) ) {
-                if (isset($context['model'][$user_id_field_name])) {
-                    return $context['model'][$user_id_field_name] == $user['id'];
-                }
-            }
+			$user = vnbiz_user();
+			if (!$user) {
+				return false;
+			}
+
+			if (isset($context['model'])) {
+				if (isset($context['model'][$user_id_field_name])) {
+					return $context['model'][$user_id_field_name] == $user['id'];
+				}
+			}
 			return false;
 		};
 		$this->create_permission_or($permissions, $create_func);
 
 		$update_func = function (&$context) use ($user_id_field_name) {
-            $user = vnbiz_user();
-            if (!$user) {
-                return false;
-            }
+			$user = vnbiz_user();
+			if (!$user) {
+				return false;
+			}
 
-            if (isset($context['filter']) ) {
-                if (isset($context['filter'][$user_id_field_name])) {
-                    return $context['filter'][$user_id_field_name] == $user['id'];
-                }
-            }
-            
+			if (isset($context['filter'])) {
+				if (isset($context['filter'][$user_id_field_name])) {
+					return $context['filter'][$user_id_field_name] == $user['id'];
+				}
+			}
+
 			return false;
 		};
 		$this->update_permission_or($permissions, $update_func);
@@ -1988,12 +2117,13 @@ class Model {
 		return $this;
 	}
 
-	public function read_field_permission($fields, $permissions) {
+	public function read_field_permission($fields, $permissions)
+	{
 		$this->web_after_find(function (&$context) use ($fields, $permissions) {
 			$models = &$context['models'];
 			if (vnbiz_user_has_permissions(...$permissions) == false) {
-				foreach($models as &$model) {
-					foreach($fields as $field) {
+				foreach ($models as &$model) {
+					foreach ($fields as $field) {
 						unset($model[$field]);
 					}
 				}
@@ -2002,13 +2132,14 @@ class Model {
 		return $this;
 	}
 
-	public function write_field_permission($fields, $permissions) {
+	public function write_field_permission($fields, $permissions)
+	{
 		$this->web_before_find(function (&$context) use ($fields, $permissions) {
 			$model = &$context['model'];
 			if (vnbiz_user_has_permissions(...$permissions) == false) {
-				foreach($fields as $field) {
+				foreach ($fields as $field) {
 					if (isset($model[$field])) {
-						throw new VnBizError('Field ' .  $field . ' need permisison to write: ' . implode(',' , $permissions), 'permission');
+						throw new VnBizError('Field ' .  $field . ' need permisison to write: ' . implode(',', $permissions), 'permission');
 					}
 				}
 			}
@@ -2016,14 +2147,15 @@ class Model {
 		return $this;
 	}
 
-	public function read_field_permission_or($fields, $permissions, $func) {
+	public function read_field_permission_or($fields, $permissions, $func)
+	{
 		$this->web_after_find(function (&$context) use ($fields, $permissions, $func) {
 			$models = &$context['models'];
-			
+
 			if (vnbiz_user_has_permissions(...$permissions) == false) {
-				foreach($models as &$model) {
+				foreach ($models as &$model) {
 					if (!$func($model)) {
-						foreach($fields as $field) {
+						foreach ($fields as $field) {
 							unset($model[$field]);
 						}
 					}
@@ -2033,14 +2165,15 @@ class Model {
 		return $this;
 	}
 
-	public function write_field_permission_or($fields, $permissions, $func) {
+	public function write_field_permission_or($fields, $permissions, $func)
+	{
 		$this->web_before_find(function (&$context) use ($fields, $permissions, $func) {
 			$model = &$context['model'];
 			if (vnbiz_user_has_permissions(...$permissions) == false) {
 				if (!$func($model)) {
-					foreach($fields as $field) {
+					foreach ($fields as $field) {
 						if (isset($model[$field])) {
-							throw new VnBizError('Field ' .  $field . ' need permisison to write: ' . implode(',' , $permissions), 'permission');
+							throw new VnBizError('Field ' .  $field . ' need permisison to write: ' . implode(',', $permissions), 'permission');
 						}
 					}
 				}
@@ -2048,5 +2181,4 @@ class Model {
 		});
 		return $this;
 	}
-
 }

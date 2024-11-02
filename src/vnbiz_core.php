@@ -677,7 +677,10 @@ class VnBiz
 
 			$conditions_query = join(' AND ', $conditions_query);
 
-			$rows = R::find($model_name, $conditions_query . $order_query . ' LIMIT ? OFFSET ?', array_merge($conditions_param, [$limit, $offset]));
+			$sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
+			// $context['sql'] = [];
+			// $context['sql'][] = [$sql_query, array_merge($conditions_param, [$limit, $offset])];
+			$rows = R::find($model_name, $sql_query, array_merge($conditions_param, [$limit, $offset]));
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];
 

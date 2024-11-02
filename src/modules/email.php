@@ -6,6 +6,11 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 function vnbiz_init_module_email() {
     vnbiz_model_add('email')
+        ->ui([
+            'icon' => 'mail',
+            'title' => 'subject',
+            'subtitle' => 'to_name'
+        ])
         ->slug('subject_template_name', 'content_template_name')
         ->string('from_email', 'to_email')
         ->string('from_name', 'to_name')

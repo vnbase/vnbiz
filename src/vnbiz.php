@@ -54,6 +54,7 @@ vnbiz_add_action('service_sys_schemas', function (&$context) {
 		}
 		$models[] = [
 			'model_name' => $model_name,
+			'ui' => $model->schema()->ui_meta,
 			'meta' => [
 				'has_tags' => $model->schema()->has_tags,
 				'has_comments' => $model->schema()->has_comments,

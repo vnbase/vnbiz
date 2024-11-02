@@ -5,6 +5,12 @@ use VnBiz\VnBizError;
 function vnbiz_init_module_comment()
 {
 	vnbiz_model_add('comment')
+		->ui([
+			'icon' => 'comment',
+			'photo' => 'image',
+			'title' => 'title',
+			'subtitle' => 'number_of_subcomments'
+		])
 		->model_name('model_name')
 		->model_id('model_id')
         ->s3_image('image', [50], [800])
