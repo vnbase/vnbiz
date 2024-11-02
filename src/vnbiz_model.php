@@ -240,7 +240,7 @@ class Model
 
 		foreach ($field_names as $field_name) {
 			if (!isset($this->schema()->schema[$field_name])) {
-				$this->schema()->schema[$field_name] = [];
+				throw new VnBizError("$field_name is not defined");
 			}
 			$this->schema()->schema[$field_name]['meta'] = [
 				'readonly' => true
@@ -261,7 +261,7 @@ class Model
 	{
 		$this->uint("v");
 		$this->default(['v' => 1]);
-		$this->web_readonly('has_v');
+		$this->web_readonly('v');
 
 		$this->db_before_update(function (&$context) {
 			if (isset($context['filter']) && isset($context['filter']['v'])) {

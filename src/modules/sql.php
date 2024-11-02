@@ -86,7 +86,7 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			$sql_type = 'ENUM(' . join(',', $options) . ')';
 			break;
 		default:
-			throw new \Error("Missing sql type for " . $field_def['type']);
+			throw new \Error("Missing sql type for $model_name, $field_name, " . $field_def['type']);
 	}
 
 	if (vnbiz_sql_table_column_exists($model_name, $field_name)) {

@@ -118,6 +118,11 @@ function vnbiz_init_module_user()
 
 
     vnbiz_model_add('usergroup')
+        ->ui([
+            'icon' => 'groups',
+            'title' => 'name',
+            // 'subtitle' => 'description'
+        ])
         ->string('name')
         ->text('description')
         ->text('permissions')
@@ -129,6 +134,11 @@ function vnbiz_init_module_user()
 
 
     vnbiz_model_add('useringroup')
+        ->ui([
+            'icon' => 'group',
+            'title' => 'user_id',
+            'subtitle' => 'usergroup_id'
+        ])
         ->ref('user_id', 'user')
         ->ref('usergroup_id', 'usergroup')
         ->require('user_id', 'usergroup_id')
