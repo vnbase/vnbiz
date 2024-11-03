@@ -142,6 +142,7 @@ function vnbiz_init_module_user()
         ->ref('usergroup_id', 'usergroup')
         ->require('user_id', 'usergroup_id')
         ->unique('user_unique_group', ['user_id', 'usergroup_id'])
+        ->author()
         ->read_permission('super', 'permission_read')
         ->write_permission('super', 'permission_write')
     ;

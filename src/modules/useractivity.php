@@ -100,8 +100,8 @@ function vnbiz_init_module_useractivity()
     vnbiz_model_add('useractivity')
         ->ui([
             'icon' => 'sensor_occupied',
-            'title' => 'name',
-            // 'subtitle' => 'description'
+            'title' => 'action',
+            'subtitle' => 'ip'
         ])
         ->ref('user_id', 'user')
         ->string('action', 'model_name')
