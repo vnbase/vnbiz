@@ -1176,6 +1176,10 @@ class Model
 			foreach ($field_names as $field_name) {
 				if (isset($model[$field_name])) {
 					$value = vnbiz_get_key($model, $field_name);
+					if ($value == null) {
+						unset($model[$field_name]);
+						continue;
+					}
 					if (is_string($value)) {
 						$arr = json_decode($value, true);
 						if ($arr === false) {
@@ -1184,6 +1188,8 @@ class Model
 					} else if (is_array($value) || is_object($value)) {
 						$model[$field_name] = json_encode($value);
 					} else {
+						var_dump(($value));
+
 						throw new VnBizError("$field_name must be json", 'invalid_model');
 					}
 				}

@@ -116,7 +116,6 @@ function vnbiz_init_module_user()
     ;
     // ->text_search('alias', 'first_name', 'last_name', 'email', 'description',);
 
-
     vnbiz_model_add('usergroup')
         ->ui([
             'icon' => 'groups',
