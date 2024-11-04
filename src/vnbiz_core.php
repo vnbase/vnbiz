@@ -124,11 +124,13 @@ class VnBiz
 		return self::$_instance;
 	}
 
-	public function getAppName() {
+	public function getAppName()
+	{
 		return $this->app_name;
 	}
 
-	public function init_app($app_name) {
+	public function init_app($app_name)
+	{
 		$this->app_name = $app_name;
 		return $this;
 	}
@@ -197,6 +199,7 @@ class VnBiz
 					$result['code'] = 'success';
 					break;
 				case 'model_count':
+					throw new VnBizError("Operator is not supported", "unsupported");
 					vnbiz_do_action('web_model_count', $context);
 					$result = $context;
 					$result['code'] = 'success';
@@ -536,6 +539,25 @@ class VnBiz
 			foreach ($field_names as $field_name) {
 				if (isset($filter[$field_name])) {
 					$value = $filter[$field_name];
+
+					if ($field_name === 'datascope') {
+						if (is_array($value)) {
+							$or_query = [];
+							if (isset($value[0])) {
+								foreach($value as $datascope) {
+									$or_query[] = "(datascope LIKE ?)";
+									$conditions_param[] = $datascope . '%';
+								}
+							}
+							$conditions_query[] = join('OR', $or_query);
+						} else {
+							$conditions_query[] = "datascope LIKE ?";
+							$conditions_param[] = $value . '%';
+						}
+
+						continue;
+					}
+
 					if (is_array($value)) {
 						if (isset($value[0])) {
 							$conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
@@ -630,6 +652,25 @@ class VnBiz
 			foreach ($field_names as $field_name) {
 				if (isset($filter[$field_name])) {
 					$value = $filter[$field_name];
+
+					if ($field_name === 'datascope') {
+						if (is_array($value)) {
+							$or_query = [];
+							if (isset($value[0])) {
+								foreach($value as $datascope) {
+									$or_query[] = "(datascope LIKE ?)";
+									$conditions_param[] = $datascope . '%';
+								}
+							}
+							$conditions_query[] = join('OR', $or_query);
+						} else {
+							$conditions_query[] = "datascope LIKE ?";
+							$conditions_param[] = $value . '%';
+						}
+
+						continue;
+					}
+
 					if (is_array($value)) {
 						if (isset($value[0])) {
 							$conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
@@ -680,6 +721,7 @@ class VnBiz
 			$sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
 			// $context['sql'] = [];
 			// $context['sql'][] = [$sql_query, array_merge($conditions_param, [$limit, $offset])];
+			error_log($sql_query);
 			$rows = R::find($model_name, $sql_query, array_merge($conditions_param, [$limit, $offset]));
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];

@@ -66,6 +66,9 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 		case 'email':
 			$sql_type = 'VARCHAR(255)';
 			break;
+		case 'datascope':
+			$sql_type = 'VARCHAR(255)';
+			break;
 		case 'slug':
 			$sql_type = 'TEXT';
 			break;

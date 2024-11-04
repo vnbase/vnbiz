@@ -14,7 +14,31 @@ function vnbiz_get_key(&$var, $key, $default = null)
     return $default;
 }
 
-function vnbiz_random_string($length = 10) {
+function vnbiz_has_key($array, $keys)
+{
+    if (!is_array($keys)) {
+        throw new VnBizError("Key list must be array");
+    }
+
+    if ($array === null) {
+        return false;
+    }
+
+    if (!is_array($array)) {
+        throw new VnBizError("Value is not array");
+    }
+
+    foreach ($keys as $key) {
+        if (!isset($array[$key])) {
+            return false;
+        }
+        $array = $array[$key];
+    }
+    return true;
+}
+
+function vnbiz_random_string($length = 10)
+{
     $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
     $charactersLength = strlen($characters);
     $randomString = '';
@@ -24,8 +48,9 @@ function vnbiz_random_string($length = 10) {
     return $randomString;
 }
 
-function vnbiz_array_contains_array($model, $filter) {
-    foreach($filter as $key=>$value) {
+function vnbiz_array_contains_array($model, $filter)
+{
+    foreach ($filter as $key => $value) {
         if (!isset($model[$key])) {
             return false;
         }
@@ -36,36 +61,41 @@ function vnbiz_array_contains_array($model, $filter) {
     return true;
 }
 
-function vnbiz_now() {
+function vnbiz_now()
+{
     date_default_timezone_set("UTC");
     return  date("Y-m-d H:i:s");
 }
-function vnbiz_html($text) {
-	return htmlspecialchars($text);
+function vnbiz_html($text)
+{
+    return htmlspecialchars($text);
 }
 
 global $VNBIZ_HASH_ID_INSTANCE;
 $VNBIZ_HASH_ID_INSTANCE = new \Hashids\Hashids('VnBizS3cr3t',  10, 'abcdefghijklmnopqrstuvwxyz');
-function vnbiz_encrypt_id($id) {
+function vnbiz_encrypt_id($id)
+{
     global $VNBIZ_HASH_ID_INSTANCE;
     if (is_numeric($id)) {
         return $VNBIZ_HASH_ID_INSTANCE->encode($id);;
     }
     return $id;
 }
-function vnbiz_encrypt_ids($ids) {
+function vnbiz_encrypt_ids($ids)
+{
     global $VNBIZ_HASH_ID_INSTANCE;
     if (is_array($ids)) {
-    	$arr = [];
-    	foreach($ids as $id) {
-    		$arr[] = vnbiz_encrypt_id($id);
-    	}
-    	return $arr;
+        $arr = [];
+        foreach ($ids as $id) {
+            $arr[] = vnbiz_encrypt_id($id);
+        }
+        return $arr;
     }
     return $ids;
 }
 
-function vnbiz_decrypt_id($id) {
+function vnbiz_decrypt_id($id)
+{
     global $VNBIZ_HASH_ID_INSTANCE;
     if (is_numeric($id)) {
         return $id;
@@ -77,14 +107,15 @@ function vnbiz_decrypt_id($id) {
     return $result[0] ?? null;
 }
 
-function vnbiz_decrypt_ids($ids) {
+function vnbiz_decrypt_ids($ids)
+{
     global $VNBIZ_HASH_ID_INSTANCE;
     if (is_array($ids)) {
-    	$arr = [];
-    	foreach($ids as $id) {
-    		$arr[] = vnbiz_decrypt_id($id);
-    	}
-    	return $arr;
+        $arr = [];
+        foreach ($ids as $id) {
+            $arr[] = vnbiz_decrypt_id($id);
+        }
+        return $arr;
     }
     return $ids;
 }
@@ -117,6 +148,17 @@ function vnbiz_get_model_field_names($model_name)
     }
 
     return array_keys($models[$model_name]->get_schema_details());
+}
+
+function vnbiz_model_has_field_name($model_name, $field_name)
+{
+    $models = vnbiz()->models();
+
+    if (!isset($models[$model_name])) {
+        return false;
+    }
+
+    return isset($models[$model_name]->get_schema_details()[$field_name]);
 }
 
 function vnbiz_handle_restful()
@@ -238,6 +280,14 @@ function vnbiz_user()
 {
     return isset($GLOBALS['vnbiz_user']) ? $GLOBALS['vnbiz_user'] : null;
 }
+function vnbiz_user_or_throw()
+{
+    $user = vnbiz_user();
+    if (!$user) {
+        throw new VnBizError("Login required", 'permission');
+    }
+    return $user;
+}
 
 function vnbiz_user_has_permissions()
 {
@@ -257,7 +307,7 @@ function vnbiz_assure_user_has_permissions(...$permissions)
     if (vnbiz_user_has_permissions(...$permissions)) {
         return;
     }
-    
+
     throw new VnBizError("Require permissions: " . implode(',', $permissions), 'permission');
 }
 
@@ -293,7 +343,8 @@ function vnbiz_assure_valid_name($name)
     }
 }
 
-function vnbiz_http_request($method, $path, $query = [], $body = false, $header = []) {
+function vnbiz_http_request($method, $path, $query = [], $body = false, $header = [])
+{
     $curl  = curl_init();
     curl_setopt($curl, CURLOPT_URL, $path . http_build_query($query));
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -319,12 +370,14 @@ function vnbiz_http_request($method, $path, $query = [], $body = false, $header 
     return $result;
 }
 
-function vnbiz_http_request_json($method, $path, $query = [], $body = false, $header = []) {
+function vnbiz_http_request_json($method, $path, $query = [], $body = false, $header = [])
+{
     $result = vnbiz_http_request($method, $path, $query, $body, $header);
     return json_decode($result);
 }
 
-function vnbiz_web_model_create($model_name, $model) {
+function vnbiz_web_model_create($model_name, $model)
+{
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
@@ -336,7 +389,8 @@ function vnbiz_web_model_create($model_name, $model) {
 
     return $context['model'];
 }
-function vnbiz_web_model_update($model_name, $filter, $model) {
+function vnbiz_web_model_update($model_name, $filter, $model)
+{
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
@@ -349,7 +403,8 @@ function vnbiz_web_model_update($model_name, $filter, $model) {
 
     return $context['old_model'];
 }
-function vnbiz_web_model_delete($model_name, $filter) {
+function vnbiz_web_model_delete($model_name, $filter)
+{
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
@@ -360,10 +415,10 @@ function vnbiz_web_model_delete($model_name, $filter) {
     vnbiz_do_action('web_model_delete', $context);
 
     return $context['old_model'];
-    
 }
 
-function vnbiz_web_model_find($model_name, $filter = [], $meta = []) {
+function vnbiz_web_model_find($model_name, $filter = [], $meta = [])
+{
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
@@ -377,16 +432,18 @@ function vnbiz_web_model_find($model_name, $filter = [], $meta = []) {
     return $context['models'];
 }
 
-function vnbiz_web_model_search(&$context) {
+function vnbiz_web_model_search(&$context)
+{
     $model_name = $context['model_name'];
     vnbiz_assure_model_name_exists($model_name);
     vnbiz_do_action('web_model_find', $context);
 }
 
-function vnbiz_web_model_find_one($model_name, $filter = [], $meta = []) {
+function vnbiz_web_model_find_one($model_name, $filter = [], $meta = [])
+{
     vnbiz_assure_model_name_exists($model_name);
 
-	$meta['limit'] = 1;
+    $meta['limit'] = 1;
     $context = [
         'model_name' => $model_name,
         'filter' => $filter,
@@ -410,17 +467,21 @@ function vnbiz_web_user()
     return $c['models'][0];
 }
 
-function vnbiz_notification_create($model) {
+function vnbiz_notification_create($model)
+{
     $GLOBALS['vnbiz_permission_skip'] = true;
-    $r = vnbiz_model_create('notification', $model, true /** to skip create trans */);
+    $r = vnbiz_model_create('notification', $model, true
+        /** to skip create trans */
+    );
     unset($GLOBALS['vnbiz_permission_skip']);
     return $r;
 }
 
-function vnbiz_array_to_xml($array, &$simpleXmlElement) {
-    foreach( $array as $key => $value ) {
-        if( is_array($value) ) {
-            if(is_numeric($key) ){
+function vnbiz_array_to_xml($array, &$simpleXmlElement)
+{
+    foreach ($array as $key => $value) {
+        if (is_array($value)) {
+            if (is_numeric($key)) {
                 $subnode = $simpleXmlElement->addChild('item');
                 $subnode->addAttribute('index', $key);
             } else {
@@ -428,12 +489,12 @@ function vnbiz_array_to_xml($array, &$simpleXmlElement) {
             }
             vnbiz_array_to_xml($value, $subnode);
         } else {
-            if(is_numeric($key) ) {
+            if (is_numeric($key)) {
                 $subnode = $simpleXmlElement->addChild('item', htmlspecialchars("$value"));
                 $subnode->addAttribute('index', $key);
             } else {
-                $simpleXmlElement->addChild(str_replace('@', '_', "$key"),htmlspecialchars("$value"));
+                $simpleXmlElement->addChild(str_replace('@', '_', "$key"), htmlspecialchars("$value"));
             }
         }
-     }
+    }
 }

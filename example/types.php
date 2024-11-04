@@ -329,3 +329,11 @@ vnbiz_model_add('contact')
 	->author()
 	->index('campaign_source', ['campaign_id', 'source_id'])
 	->text_search('description', 'display_name', 'first_name', 'last_name', 'email', 'phone');;
+
+vnbiz_model_add('order')
+	->has_datascope()
+	->ref('contact_id', 'contact')
+	->ref('user_id', 'user')
+	->text('note')
+	->author()
+	;

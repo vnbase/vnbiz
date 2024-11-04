@@ -12,8 +12,6 @@ include __DIR__ . '/base/hashids/src/HashidsException.php';
 include __DIR__ . '/base/hashids/src/Hashids.php';
 
 include __DIR__ . '/vnbiz_functions.php';
-include __DIR__ . '/vnbiz_model.php';
-include __DIR__ . '/vnbiz_core.php';
 
 include __DIR__ . '/modules/systemconfig.php';
 include __DIR__ . '/modules/user.php';
@@ -33,21 +31,41 @@ include __DIR__ . '/modules/notification.php';
 include __DIR__ . '/modules/redis.php';
 include __DIR__ . '/modules/monitor.php';
 include __DIR__ . '/modules/useractivity.php';
+include __DIR__ . '/modules/datascope.php';
 
+include __DIR__ . '/vnbiz_model.php';
+include __DIR__ . '/vnbiz_core.php';
 
 date_default_timezone_set("UTC");
 ini_set('session.cookie_samesite', 'None');
 session_start();
 
 vnbiz()
-	->init_modules('systemconfig', 'user', 'usermark', 'comment', 'tag', 'review', 'history', 's3', 'template', 'email', 'oauth', 'notification', 'redis', 'monitor', 'useractivity');
+	->init_modules(
+		'systemconfig',
+		'user',
+		'usermark',
+		'comment',
+		'tag',
+		'review',
+		'history',
+		's3',
+		'template',
+		'email',
+		'oauth',
+		'notification',
+		'redis',
+		'monitor',
+		'useractivity',
+		'datascope'
+	);
 
 
 vnbiz_add_action('service_sys_schemas', function (&$context) {
 	$models = [];
-	foreach (vnbiz()->models() as $model_name=>$model) {
+	foreach (vnbiz()->models() as $model_name => $model) {
 		$properties = [];
-		foreach ($model->schema()->schema as $field_name=>$field_def) {
+		foreach ($model->schema()->schema as $field_name => $field_def) {
 			$properties[] = [
 				'field_name' => $field_name,
 				'meta' => $field_def

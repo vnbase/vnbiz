@@ -100,6 +100,8 @@ class Schema
 
 class Model
 {
+	use \vnbiz_trait_datascope;
+
 	private $schema;
 
 	public function __construct($model_name)
@@ -1188,8 +1190,6 @@ class Model
 					} else if (is_array($value) || is_object($value)) {
 						$model[$field_name] = json_encode($value);
 					} else {
-						var_dump(($value));
-
 						throw new VnBizError("$field_name must be json", 'invalid_model');
 					}
 				}
@@ -1208,7 +1208,11 @@ class Model
 					if (is_string($value)) {
 						$arr = json_decode($value, true);
 						if ($arr === false) {
-							throw new VnBizError("$field_name must be json", 'invalid_model');
+							$model[$field_name] = [
+								'vnbiz_invalid_json' =>  true,
+								'original_value' => $value
+							];
+							// throw new VnBizError("$field_name must be json", 'invalid_model');
 						} else {
 							$model[$field_name] = $arr;
 						}
