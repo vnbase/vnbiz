@@ -13,12 +13,19 @@ function vnbiz_init_module_datascope()
         ->text('description')
         ->author()
         ->require('name', 'scope', 'created_by')
-        ->index('fast', ['scope'])
         ->read_permission('super', 'datascope_read')
         ->write_permission('super', 'datascope_write')
+        ->unique("unique", ['scope'])
         ->db_before_create($validate_model_scope)
         ->db_before_update($validate_model_scope)
     ;
+}
+function vnbiz_get_user_permissions_scope()
+{
+    if (isset($GLOBALS['vnbiz_user_permissions_scope'])) {
+        return $GLOBALS['vnbiz_user_permissions_scope'];
+    }
+    return [];
 }
 
 function vnbiz_current_user_inaccessable_datascope($scopes)
@@ -26,16 +33,10 @@ function vnbiz_current_user_inaccessable_datascope($scopes)
     if (!is_array($scopes)) {
         throw new VnBizError('$scopes must be array');
     }
-    $user = vnbiz_user();
-    if (!isset($user['permission_scope'])) {
-        return '.';
-    }
-    if (vnbiz_user_has_permissions('super')) {
-        return null;
-    }
+    $user_permissions_scopes = isset($GLOBALS['vnbiz_user_permissions_scope']) ? $GLOBALS['vnbiz_user_permissions_scope'] : [];
     foreach ($scopes as $scope) {
         $valid = false;
-        foreach ($user['permission_scope'] as $key => $value) {
+        foreach ($user_permissions_scopes as $key => $value) {
             if (str_starts_with($scope, $key)) {
                 $valid = true;
                 break;
@@ -109,10 +110,9 @@ trait vnbiz_trait_datascope
             if (vnbiz_user_has_permissions('super')) {
                 return;
             }
-            $user = vnbiz_user_or_throw();
-            if (!isset($user['permission_scope'])) {
-                throw new VnBizError("User has no permission_scope", 'permission', ['permission_scope' => false]);
-            }
+
+            vnbiz_user_or_throw(); // must login
+
             $scopes = [];
             if (vnbiz_has_key($context, ['filter', $field_name])) {
                 $scopes = $context['filter'][$field_name];
@@ -137,7 +137,11 @@ trait vnbiz_trait_datascope
                     throw new VnBizError("You are not allowed to access this filter datascope", 'permission', ['datascope' => $inaccessable_datascope]);
                 }
             } else {
-                $context['filter'][$field_name] = array_keys($user['permission_scope']);
+                $scopes = array_keys(vnbiz_get_user_permissions_scope());
+                if (empty($scopes)) {
+                    throw new VnBizError("You don't have any permissions_scope", 'permission', ['datascope' => false]);
+                }
+                $context['filter'][$field_name] = $scopes;
             }
         };
         $this->web_before_find($valiate_filter);

@@ -50,7 +50,10 @@ function vnbiz_user_add_default()
     $usergroup = vnbiz_model_create('usergroup', [
         'name' => 'Super Admin Group',
         'description' => 'You know, for Supert Admin user',
-        'permissions' => 'super'
+        'permissions' => 'super',
+        'permission_scope' => [
+            '.' => true
+        ]
     ]);
     vnbiz_model_create('useringroup', [
         'user_id' => $user['id'],
@@ -81,7 +84,6 @@ function vnbiz_init_module_user()
         ->string('language')
         ->string('google_sub')
         ->password('password')
-        ->json('permission_scope')
         ->text('bio', 'note')
         ->enum('status', ['active', 'inactive', 'deleted'], 'active')
         ->has_usermarks('follow')
@@ -126,6 +128,7 @@ function vnbiz_init_module_user()
         ->string('name')
         ->text('description')
         ->text('permissions')
+        ->json('permissions_scope')
         ->author()
         ->text_search('name', 'description')
         ->read_permission('super', 'permission_read')
@@ -192,15 +195,24 @@ function vnbiz_init_module_user()
                     ];
                     vnbiz_model_search($find_context);
                     $permissions = [];
+                    $permissions_scopes = [];
                     foreach ($find_context['models'] as $useringroup) {
                         if (isset($useringroup['@usergroup_id'])) {
-                            foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
-                                isset($permissions[$per]) ?: $permissions[$per] = [];
-                                $permissions[$per][] = $useringroup['@usergroup_id']['id'];
+                            if (isset($useringroup['@usergroup_id']['permissions'])) {
+                                foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
+                                    isset($permissions[$per]) ?: $permissions[$per] = [];
+                                    $permissions[$per][] = $useringroup['@usergroup_id']['id'];
+                                }
+                            }
+                            if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
+                                foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
+                                    $permissions_scopes[$scope] = true;
+                                }
                             }
                         }
                     }
                     $GLOBALS['vnbiz_user_permissions'] = $permissions;
+                    $GLOBALS['vnbiz_user_permissions_scope'] = $permissions_scopes;
                 } else {
                     unset($_SESSION['user_id']);
                 }
@@ -231,15 +243,24 @@ function vnbiz_init_module_user()
                     // $GLOBALS['vnbiz_user_permissions'] []
 
                     $permissions = [];
+                    $permissions_scopes = [];
                     foreach ($find_context['models'] as $useringroup) {
                         if (isset($useringroup['@usergroup_id'])) {
-                            foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
-                                isset($permissions[$per]) ?: $permissions[$per] = [];
-                                $permissions[$per][] = $useringroup['@usergroup_id']['id'];
+                            if (isset($useringroup['@usergroup_id']['permissions'])) {
+                                foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
+                                    isset($permissions[$per]) ?: $permissions[$per] = [];
+                                    $permissions[$per][] = $useringroup['@usergroup_id']['id'];
+                                }
+                            }
+                            if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
+                                foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
+                                    $permissions_scopes[$scope] = true;
+                                }
                             }
                         }
                     }
                     $GLOBALS['vnbiz_user_permissions'] = $permissions;
+                    $GLOBALS['vnbiz_user_permissions_scope'] = $permissions_scopes;
 
 
                     // if (isset($GLOBALS['vnbiz_user']) && isset($GLOBALS['vnbiz_user']['id'])) {
@@ -251,6 +272,7 @@ function vnbiz_init_module_user()
                     if ($user) {
                         $GLOBALS['vnbiz_user'] = $user;
                         $GLOBALS['vnbiz_user_permissions'] = [];
+                        $GLOBALS['vnbiz_user_permissions_scope'] = [];
                     } else {
                         unset($_SESSION['user_id']);
                     }
@@ -308,6 +330,7 @@ function vnbiz_init_module_user()
             $context['code'] = 'success';
             $context['model_name'] = 'user';
             $user['@permissions'] = $GLOBALS['vnbiz_user_permissions'];
+            $user['@permissions_scope'] = $GLOBALS['vnbiz_user_permissions_scope'];
             $context['models'] = [$user];
             return;
         }
