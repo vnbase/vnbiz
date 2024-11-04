@@ -13,7 +13,7 @@ done
 echo "############################# START TESTING ###########################"
 
 # docker-compose exec webapp $TEST_COMMAND
-docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit tests
+docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
 TEST_RESULT=$?
 echo "############################# END TESTING ###########################"
 
@@ -27,4 +27,5 @@ else
   echo "Tests failed."
 fi
 
+echo $TEST_RESULT;
 exit $TEST_RESULT

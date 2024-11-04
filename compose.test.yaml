@@ -19,6 +19,7 @@ services:
       - ./test:/var/www/html/test
       - ./example:/var/www/html/example
       - ./tests:/var/www/html/tests
+      - ./phpunit.xml:/var/www/html/phpunit.xml
     depends_on:
       - mysql8
       - redis7

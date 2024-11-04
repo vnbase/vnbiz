@@ -8,6 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 final class UserTest extends TestCase
 {
+    // public function setUp(): void {
+
+    // }
+
     public function testUserFindSimple(): void
     {
         [$httpcode, $body] = CLIENT::model_find('user');
@@ -27,6 +31,7 @@ final class UserTest extends TestCase
         $model = $body['model'];
         $this->assertArrayHasKey('id', $model, 'has user id');
     }
+
     public function testUserLogin(): void
     {
         [$httpcode, $body] = CLIENT::login("admin@vnbiz.com", '12345678');
@@ -36,7 +41,6 @@ final class UserTest extends TestCase
         $this->assertEquals(1, sizeof($body['models']), 'only one model');
         [$model] = $body['models'];
         $this->assertArrayHasKey('id', $model, 'has user id');
-
 
         [$httpcode, $body] = CLIENT::callService('service_user_me');
         $this->assertEquals(200, $httpcode,  'service_user_me: 200 responses');
