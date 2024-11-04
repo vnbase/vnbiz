@@ -18,6 +18,12 @@ services:
       - ./src:/var/www/html/src
       - ./test:/var/www/html/test
       - ./example:/var/www/html/example
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:80/test/"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
     depends_on:
       - mysql8
       - redis7

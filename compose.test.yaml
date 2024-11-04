@@ -1,0 +1,66 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  webapp:
+    build:
+      # context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - 8080:80
+    volumes:
+      - ./src:/var/www/html/src
+      - ./test:/var/www/html/test
+      - ./example:/var/www/html/example
+      - ./tests:/var/www/html/tests
+    depends_on:
+      - mysql8
+      - redis7
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--fail-with-body", "http://localhost:8080/test/?action=model_find&model_name=user"]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+
+  mysql8:
+    image: mysql:8.4.2
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: vnbiz_dev
+    # (this is just an example, not intended to be a production configuration)
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+
+  redis7:
+    image: redis:7.4.1-alpine
+    restart: always
+    ports:
+      - 6379:6379
+  minio:
+    image: bitnami/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioroot
+      MINIO_ROOT_PASSWORD: rootpass
+      MINIO_DEFAULT_BUCKETS: vnbizbucket
+      # MINIO_DATA_DIR: /my-data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 4

@@ -376,6 +376,9 @@ class VnBiz
 				if (method_exists($e, 'getSqlState') && $e->getSqlState() === '23000') { // dupplicated
 					throw new VnBizError('Model already exists', 'model_exists');
 				} else {
+					if (method_exists($e, 'getSqlState')) {
+						error_log("SQL_ERROR: " . $e->getSqlState());
+					}
 					throw $e;
 				}
 			}
@@ -544,7 +547,7 @@ class VnBiz
 						if (is_array($value)) {
 							$or_query = [];
 							if (isset($value[0])) {
-								foreach($value as $datascope) {
+								foreach ($value as $datascope) {
 									$or_query[] = "(datascope LIKE ?)";
 									$conditions_param[] = $datascope . '%';
 								}
@@ -657,7 +660,7 @@ class VnBiz
 						if (is_array($value)) {
 							$or_query = [];
 							if (isset($value[0])) {
-								foreach($value as $datascope) {
+								foreach ($value as $datascope) {
 									$or_query[] = "(datascope LIKE ?)";
 									$conditions_param[] = $datascope . '%';
 								}
