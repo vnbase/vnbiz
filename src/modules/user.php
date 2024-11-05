@@ -212,7 +212,7 @@ function vnbiz_init_module_user()
         if (isset($context['params']['refresh_token'])) {
             $arr = vnbiz_token_verify($context['params']['refresh_token'], VNBIZ_TOKEN_SECRET);
             if ($arr &&  isset($arr['sub']) && isset($arr['typ']) && $arr['typ'] === 'refresh') {
-                $user = vnbiz_model_find_one('user', ['id' => $arr['sub']]);
+                $user = vnbiz_model_find_one('user', ['id' => vnbiz_decrypt_id($arr['sub'])]);
                 if (!$user) {
                     throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
                 }
@@ -275,7 +275,7 @@ function vnbiz_init_module_user()
         $expire_in = 900; //15 minutes
         $context['refresh_token'] = vnbiz_token_sign([
             'typ' => 'refresh',
-            'sub' => $user['id']
+            'sub' => vnbiz_encrypt_id($user['id']),
         ], VNBIZ_TOKEN_SECRET);
 
         $context['access_token'] = vnbiz_token_sign([
