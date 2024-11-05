@@ -182,12 +182,16 @@ function vnbiz_init_module_user()
                 $user = vnbiz_model_find_one('user', ['id' => $arr['user_id']]);
 
                 if ($user) {
+                    if ($user['status'] != 'active') {
+                        throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
+                    }
+
                     $GLOBALS['vnbiz_user'] = $user;
 
                     $find_context = [
                         'model_name' => 'useringroup',
                         'filter' => [
-                            'user_id' => $user['id']
+                            'user_id' => $user['id'],
                         ],
                         'meta' => [
                             'ref' => true
@@ -217,7 +221,7 @@ function vnbiz_init_module_user()
                     unset($_SESSION['user_id']);
                 }
             } else {
-                throw new VnBizError('Invalid bearer token', "invalid_token");
+                throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
             }
 
             return; // skip other
@@ -266,17 +270,18 @@ function vnbiz_init_module_user()
                     // if (isset($GLOBALS['vnbiz_user']) && isset($GLOBALS['vnbiz_user']['id'])) {
 
                     // }
-                } else {
-                    $user = vnbiz_model_find_one('user', ['id' => $_SESSION['user_id']]);
+                } 
+                // else {
+                //     $user = vnbiz_model_find_one('user', ['id' => $_SESSION['user_id']]);
 
-                    if ($user) {
-                        $GLOBALS['vnbiz_user'] = $user;
-                        $GLOBALS['vnbiz_user_permissions'] = [];
-                        $GLOBALS['vnbiz_user_permissions_scope'] = [];
-                    } else {
-                        unset($_SESSION['user_id']);
-                    }
-                }
+                //     if ($user) {
+                //         $GLOBALS['vnbiz_user'] = $user;
+                //         $GLOBALS['vnbiz_user_permissions'] = [];
+                //         $GLOBALS['vnbiz_user_permissions_scope'] = [];
+                //     } else {
+                //         unset($_SESSION['user_id']);
+                //     }
+                // }
             }
         }
     });
@@ -326,17 +331,22 @@ function vnbiz_init_module_user()
 
     vnbiz_add_action("service_user_me", function (&$context) {
         $user = vnbiz_user();
-        if ($user) {
-            $context['code'] = 'success';
-            $context['model_name'] = 'user';
-            $user['@permissions'] = $GLOBALS['vnbiz_user_permissions'];
-            $user['@permissions_scope'] = $GLOBALS['vnbiz_user_permissions_scope'];
-            $context['models'] = [$user];
+        if (!$user) {
+            $context['code'] = 'login_required';
+            $context['models'] = [];
+            return;
+        }
+        if ($user['status'] !== 'active') {
+            $context['code'] = 'user_status';
+            $context['models'] = [];
             return;
         }
 
         $context['code'] = 'success';
-        $context['models'] = [];
+        $context['model_name'] = 'user';
+        $user['@permissions'] = $GLOBALS['vnbiz_user_permissions'];
+        $user['@permissions_scope'] = $GLOBALS['vnbiz_user_permissions_scope'];
+        $context['models'] = [$user];
     });
 
     vnbiz_add_action("service_user_logout", function (&$context) {

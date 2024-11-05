@@ -10,15 +10,23 @@ class VnBizError extends Exception
 {
 	private $status = null;
 	private $error_fields = null;
+	private $http_status;
 
 	// Redefine the exception so message isn't optional
-	public function __construct($message, $status = 'unknown', $error_fields = null, Throwable $previous = null)
+	public function __construct($message, $status = 'unknown', $error_fields = null, Throwable $previous = null, $http_status = null)
 	{
 		// make sure everything is assigned properly
 		parent::__construct($message, 1, $previous);
 
 		$this->status = $status;
 		$this->error_fields = $error_fields;
+		$this->http_status = $http_status;
+		if ($http_status === null) {
+			$this->http_status = 400;
+			if ($status === 'permission') {
+				$this->http_status = 403;
+			} 
+		} 
 	}
 
 	// custom string representation of object
@@ -34,6 +42,10 @@ class VnBizError extends Exception
 	public function get_error_fields()
 	{
 		return $this->error_fields;
+	}
+	public function http_status()
+	{
+		return $this->http_status;
 	}
 }
 
@@ -240,11 +252,8 @@ class VnBiz
 					}
 			}
 		} catch (VnbizError $e) {
-			if ($e->get_status() == 'permission') {
-				http_response_code(403);
-			} else {
-				http_response_code(400);
-			}
+			http_response_code($e->http_status());
+
 			$result = [
 				'code' => $e->get_status(),
 				'error' => $e->getMessage(),
@@ -729,7 +738,7 @@ class VnBiz
 			$sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
 			// $context['sql'] = [];
 			// $context['sql'][] = [$sql_query, array_merge($conditions_param, [$limit, $offset])];
-			error_log($sql_query);
+			// error_log($sql_query);
 			$rows = R::find($model_name, $sql_query, array_merge($conditions_param, [$limit, $offset]));
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];

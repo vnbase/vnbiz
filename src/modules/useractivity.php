@@ -116,7 +116,7 @@ function vnbiz_init_module_useractivity()
         ->no_update()
         ->no_delete()
         ->read_permission('super', 'user_read')
-        ->index('fast', ['created_at', 'user_id', 'action', 'model'])
+        ->index('fast', ['created_at', 'user_id', 'action', 'model_name'])
     ;
 
     vnbiz_add_action('web_before', function (&$context) {

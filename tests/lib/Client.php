@@ -1,6 +1,8 @@
 <?php
 
-
+if (class_exists('Client')) {
+    return;
+}
 
 class Client
 {
@@ -104,13 +106,34 @@ class Client
         return Client::REQUEST($payload);
     }
 
+    static function model_update($model_name, $filter, $model)
+    {
+        $payload = [
+            'action' => 'model_update',
+            'model_name' => $model_name
+        ];
+        foreach ($filter as $key => $value) {
+            $payload["filter[$key]"] = $value;
+        }
+        foreach ($model as $key => $value) {
+            $payload["model[$key]"] = $value;
+        }
+        return Client::REQUEST($payload);
+    }
+
     static function login($email, $password)
     {
         [$code, $body] = Client::callService('service_user_login', ['email' => $email, 'password' => $password]);
-        if ($code !== 200 || !isset($body['access_token'])) {
-            throw new Error("Login Failed");
-        }
         $GLOBALS['client_access_token'] = $body['access_token'];
+        return [$code, $body];
+    }
+
+    static function loginSuper()
+    {
+        [$code, $body] = Client::login('superadmin@vnbiz.com', 'superadmin');
+        if ($code !== 200 || $body['code'] !== 'success') {
+            throw new Error("Login Super Failed");
+        }
         return [$code, $body];
     }
 

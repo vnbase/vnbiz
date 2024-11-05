@@ -1,5 +1,6 @@
 <?php
 
+use VnBiz\VnBizError;
 
 function vnbiz_sql_table_column_exists($table, $column)
 {
@@ -138,5 +139,61 @@ function vnbiz_sql_generate()
 function vnbiz_sql_alter_tables()
 {
 	$sql = vnbiz_sql_generate();
-	return R::exec($sql);
+	R::exec($sql);
+}
+
+
+function vnbiz_sql_alter_tables_echo()
+{
+	$models = vnbiz()->models();
+	$sql = '';
+
+	foreach ($models as $model) {
+		$schema = $model->schema();
+		$model_name = $schema->model_name;
+		$sql = vnbiz_sql_gen_create_table($model_name);
+		echo $sql;
+		try {
+			R::exec($sql);
+		} catch (\Throwable $e) {
+			echo $e->getMessage();
+			throw $e;
+		}
+		// $fields = $model->schema;
+		foreach ($schema->schema as $field_name => $field_def) {
+			if ($field_name !== 'id') {
+				$sql = vnbiz_sql_gen_column($model_name, $field_name, $field_def);
+				echo $sql;
+				try {
+					R::exec($sql);
+				} catch (\Throwable $e) {
+					echo $e->getMessage();
+					throw $e;
+				}
+			}
+		}
+	}
+
+	$c = [
+		'sql' => ''
+	];
+	vnbiz_do_action('sql_gen_index', $c);
+
+	$sql = $c['sql'];
+
+	foreach(preg_split("/((\r?\n)|(\r\n?))/", $sql) as $line){
+		if (trim($line) !== '') {
+			echo $line;
+			
+			try {
+				R::exec($line);
+			} catch (\Throwable $e) {
+				echo $e->getMessage();
+				throw $e;
+			}
+		}
+		// do stuff with $line
+	} 
+
+	return $sql;
 }
