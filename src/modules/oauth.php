@@ -11,6 +11,30 @@ function vnbiz_init_module_oauth() {
         // 'hostedDomain' => 'example.com', // optional; used to restrict access to users on your G Suite/Google Apps for Business accounts
     ]);
 
+    vnbiz_add_action("web_before", function (&$context) {
+        if (isset($context['action'])) {
+            return;
+        }
+        
+        if (isset($_POST['grant_type'])) {
+            if ($_POST['grant_type'] === 'password') {
+                if (isset($_POST['username']) && isset($_POST['password'])) {
+                    $context['action'] = "service_user_login";
+                    $context['params'] = [
+                        'username' => $_POST['username'],
+                        'password' => $_POST['password']
+                    ];
+                }
+            } else if ($_POST['grant_type'] === 'refresh_token') {
+                if (isset($_POST['refresh_token'])) {
+                    $context['action'] = "service_user_login";
+                    $context['params'] = [
+                        'refresh_token' => $_POST['refresh_token']
+                    ];
+                }
+            } 
+        }
+    });
 
     vnbiz_add_action("service_oauth_google_url", function (&$context) use ($provider) {
         if (!$context['params'] || !isset($context['params']['redirect_url']) ) {

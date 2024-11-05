@@ -122,9 +122,16 @@ class Client
         return $this->REQUEST($payload);
     }
 
-    public function login($email, $password)
+    public function login($username, $password)
     {
-        [$code, $body] = $this->callService('service_user_login', ['email' => $email, 'password' => $password]);
+        [$code, $body] = $this->callService('service_user_login', ['username' => $username, 'password' => $password]);
+        $this->client_access_token = $body['access_token'];
+        return [$code, $body];
+    }
+
+    public function loginOAuthPassword($username, $password)
+    {
+        [$code, $body] = $this->callService('service_user_login', ['username' => $username, 'password' => $password]);
         $this->client_access_token = $body['access_token'];
         return [$code, $body];
     }

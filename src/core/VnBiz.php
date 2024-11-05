@@ -86,7 +86,6 @@ class VnBiz
 			}
 		}
 
-		$action = vnbiz_get_var($context['action'], '');
 		$result = [
 			'code' => 'no_such_action'
 		];
@@ -95,6 +94,7 @@ class VnBiz
 		try {
 			vnbiz_do_action('web_before', $context);
 
+			$action = vnbiz_get_var($context['action'], '');
 			switch ($action) {
 				case 'model_create':
 					vnbiz_do_action('web_model_create', $context);

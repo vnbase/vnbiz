@@ -64,7 +64,7 @@ final class ProjectTest extends TestCase
 
         [$status, $body] = $client->model_find('project', [], ['text_search' => 'abc', 'count' => true]);
         $this->assertEquals(200, $status, 'Can search');
-        $this->assertEquals(2, sizeof($body['models']), 'found only 1 model');
-        $this->assertEquals(2, $body['meta']['count'], 'count ==1 1');
+        $this->assertEquals(2, sizeof($body['models']), 'find 2 models');
+        $this->assertEquals(2, $body['meta']['count'], 'count == 2');
     }
 }
