@@ -1,4 +1,4 @@
-docker compose -f compose.test.yaml up --wait 
+sudo docker compose -f compose.test.yaml up --build --wait
 
 max_retry=5
 counter=0
@@ -13,11 +13,11 @@ done
 echo "############################# START TESTING ###########################"
 
 # docker-compose exec webapp $TEST_COMMAND
-docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
+sudo docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
 TEST_RESULT=$?
 echo "############################# END TESTING ###########################"
 
-docker compose  -f compose.test.yaml down
+sudo docker compose  -f compose.test.yaml down
 
 
 # Exit with the test result code

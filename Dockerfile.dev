@@ -41,6 +41,12 @@ RUN --mount=type=bind,source=composer.json,target=composer.json \
 # php@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
 FROM php:8.3.12-apache as final
 
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+RUN php composer-setup.php
+RUN php -r "unlink('composer-setup.php');"
+RUN mv composer.phar /usr/bin/composer
+
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
 # https://github.com/docker-library/docs/tree/master/php#how-to-install-more-php-extensions
@@ -55,7 +61,8 @@ RUN apt-get update && apt-get install -y \
     # zlib1g-dev \
     libfreetype-dev \
     libjpeg62-turbo-dev \
-    libpng-dev 
+    libpng-dev \
+    libzip-dev
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd
 
@@ -67,7 +74,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # sysvsem sysvshm tidy tokenizer xml xmlreader xmlwriter xsl zend_test zip
 
 RUN apt-get install -y libonig-dev libcurl4 libcurl4-openssl-dev
-RUN docker-php-ext-install bcmath mbstring 
+RUN docker-php-ext-install bcmath mbstring zip
 RUN docker-php-ext-install pdo pdo_mysql curl
 # RUN docker-php-ext-install opcache
 
@@ -90,9 +97,12 @@ RUN echo "\nextension=redis.so \n" >> "$PHP_INI_DIR/php.ini"
 #RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 # Copy the app dependencies from the previous install stage.
-COPY --from=deps /app/vendor /var/www/html/vendor
+COPY composer.json .
+COPY composer.lock .
+RUN composer install
+COPY . .
 # Copy the app files from the app directory.
-COPY ./src /var/www/html/src
+# COPY ./src /var/www/html/src
 
 # Switch to a non-privileged user (defined in the base image) that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
