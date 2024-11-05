@@ -18,12 +18,6 @@ services:
       - ./src:/var/www/html/src
       - ./test:/var/www/html/test
       - ./example:/var/www/html/example
-    healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:80/test/"]
-      interval: 10s
-      retries: 5
-      start_period: 30s
-      timeout: 10s
     depends_on:
       - mysql8
       - redis7
@@ -74,6 +68,12 @@ services:
       - 3306:3306
     volumes:
       - ./data.mysql:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 55
 
   phpmyadmin:
     image: phpmyadmin:5.2.1-apache
@@ -103,3 +103,8 @@ services:
     ports:
       - 9000:9000
       - 9001:9001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 4
