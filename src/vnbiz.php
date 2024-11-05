@@ -61,6 +61,22 @@ vnbiz()
 	);
 
 
+
+vnbiz_add_action('service_health_check', function (&$context) { 
+	$mysql_connected = R::testConnection();
+	$redis_connected = vnbiz_redis()->ping();
+	$context['code'] = 'success';
+
+	if (!$mysql_connected || !$redis_connected) {
+		$context['code'] = 'unhealthy';
+	}
+
+	$context['models'] = [
+		'mysql_connected' => $mysql_connected,
+		'redis_connected' => $redis_connected
+	];
+});
+
 vnbiz_add_action('service_sys_schemas', function (&$context) {
 	$models = [];
 	foreach (vnbiz()->models() as $model_name => $model) {

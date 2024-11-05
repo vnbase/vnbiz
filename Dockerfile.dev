@@ -76,15 +76,18 @@ RUN docker-php-ext-install bcmath mbstring zip
 RUN docker-php-ext-install pdo pdo_mysql curl
 # RUN docker-php-ext-install opcache
 
+RUN pecl install redis-5.3.7
+
 RUN rm -rf /var/lib/apt/lists/* 
 
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+# This causes error in some dockerds:
+#RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
     #
 # Add PECL extensions, see
 # https://github.com/docker-library/docs/tree/master/php#pecl-extensions
 # This example adds the 'redis' and 'xdebug' extensions.
-RUN pecl install redis-5.3.7
+
 RUN echo "\nextension=redis.so \n" >> "$PHP_INI_DIR/php.ini" 
 
 # RUN pecl install redis-5.3.7 \
