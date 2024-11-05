@@ -36,9 +36,10 @@ class VnBiz
 		return $this->app_name;
 	}
 
-	public function init_app($app_name)
+	public function init_app($app_name, $token_secret)
 	{
 		$this->app_name = $app_name;
+		define('VNBIZ_TOKEN_SECRET', $token_secret);
 		return $this;
 	}
 

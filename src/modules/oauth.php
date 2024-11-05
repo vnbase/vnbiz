@@ -76,7 +76,7 @@ function vnbiz_init_module_oauth() {
                 ]);
             }
             $context['models'] = [$user];
-            $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], 'vnbizsecret');
+            $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], VNBIZ_TOKEN_SECRET);
 
         } catch (Exception $e) { 
             throw $e;

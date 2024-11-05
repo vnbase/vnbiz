@@ -157,7 +157,7 @@ class Model
 		}
 		$remove_web_readonly_fields = function (&$context) use ($field_names) {
 			foreach ($field_names as $field_name) {
-				if (isset($context['model']) && $context['model'][$field_name]) {
+				if (isset($context['model']) && isset($context['model'][$field_name])) {
 					unset($context['model'][$field_name]);
 				}
 			}
@@ -1547,7 +1547,8 @@ class Model
 					]);
 				} catch (\Exception $e) {
 					// echo $model_name . '#' . $id . "#";
-					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
+					// trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
+					throw $e;
 				}
 			}
 			if ($old_id && $old_id !== $id && vnbiz_array_contains_array($context['old_model'], $filter)) {

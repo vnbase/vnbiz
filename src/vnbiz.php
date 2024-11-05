@@ -44,8 +44,6 @@ include __DIR__ . '/core/VnBiz.php';
 
 
 date_default_timezone_set("UTC");
-ini_set('session.cookie_samesite', 'None');
-session_start();
 
 vnbiz()
 	->init_modules(

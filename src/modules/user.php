@@ -62,6 +62,9 @@ function vnbiz_user_add_default()
     return $user;
 }
 
+//TODO: Add refresh token service
+//TODO: Limit request per second
+//TODO: capchar features
 function vnbiz_init_module_user()
 {
     vnbiz_model_add('user')
@@ -152,138 +155,50 @@ function vnbiz_init_module_user()
     ;
 
     vnbiz_add_action('web_before', function (&$context) {
-        if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
-            $auth = $_SERVER["HTTP_AUTHORIZATION"];
-            $auth_array = explode(" ", $auth);
-            $un_pw = explode(":", base64_decode($auth_array[1]));
-            $email = $un_pw[0];
-            $password = $un_pw[1];
-
-            if ($email && $password) {
-                $user = vnbiz_model_find_one('user', [
-                    'email' => $email
-                ]);
-                if ($user) {
-                    if (password_verify($password, $user['password'])) {
-                        $_SESSION['user_id'] = $user['id'];
-                    }
-                } else {
-                    session_destroy();
-                }
-            }
-        }
 
         $token = vnbiz_getBearerToken();
-        if ($token) {
+        if (!$token) {
+            return;
+        }
 
-            $arr = vnbiz_token_verify($token, 'vnbizsecret');
+        $arr = vnbiz_token_verify($token, VNBIZ_TOKEN_SECRET);
+        if ($arr && isset($arr['user_id'])) {
+        } else {
+            throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
+        }
 
-            if ($arr && $arr['user_id']) {
-                $user = vnbiz_model_find_one('user', ['id' => $arr['user_id']]);
+        $user = vnbiz_model_find_one('user', ['id' => $arr['user_id']]);
 
-                if ($user) {
-                    if ($user['status'] != 'active') {
-                        throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
+        if (!$user) {
+            throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
+        }
+
+        if ($user['status'] != 'active') {
+            throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
+        }
+
+        $GLOBALS['vnbiz_user'] = $user;
+
+        $useringroups = vnbiz_model_find('useringroup', ['user_id' => $user['id']], ['ref' => true, 'limit' => 1000]);
+        $permissions = [];
+        $permissions_scopes = [];
+        foreach ($useringroups as $useringroup) {
+            if (isset($useringroup['@usergroup_id'])) {
+                if (isset($useringroup['@usergroup_id']['permissions'])) {
+                    foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
+                        isset($permissions[$per]) ?: $permissions[$per] = [];
+                        $permissions[$per][] = $useringroup['@usergroup_id']['id'];
                     }
-
-                    $GLOBALS['vnbiz_user'] = $user;
-
-                    $find_context = [
-                        'model_name' => 'useringroup',
-                        'filter' => [
-                            'user_id' => $user['id'],
-                        ],
-                        'meta' => [
-                            'ref' => true
-                        ]
-                    ];
-                    vnbiz_model_search($find_context);
-                    $permissions = [];
-                    $permissions_scopes = [];
-                    foreach ($find_context['models'] as $useringroup) {
-                        if (isset($useringroup['@usergroup_id'])) {
-                            if (isset($useringroup['@usergroup_id']['permissions'])) {
-                                foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
-                                    isset($permissions[$per]) ?: $permissions[$per] = [];
-                                    $permissions[$per][] = $useringroup['@usergroup_id']['id'];
-                                }
-                            }
-                            if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
-                                foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
-                                    $permissions_scopes[$scope] = true;
-                                }
-                            }
-                        }
-                    }
-                    $GLOBALS['vnbiz_user_permissions'] = $permissions;
-                    $GLOBALS['vnbiz_user_permissions_scope'] = $permissions_scopes;
-                } else {
-                    unset($_SESSION['user_id']);
                 }
-            } else {
-                throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
-            }
-
-            return; // skip other
-        }
-
-        $has_session = session_status() == PHP_SESSION_ACTIVE;
-        if ($has_session) {
-            if (isset($_SESSION['user_id']) && !isset($GLOBALS['vnbiz_user'])) {
-
-                $find_context = [
-                    'model_name' => 'useringroup',
-                    'filter' => [
-                        'user_id' => $_SESSION['user_id']
-                    ],
-                    'meta' => [
-                        'ref' => true
-                    ]
-                ];
-                vnbiz_model_search($find_context);
-
-                if (sizeof($find_context['models']) > 0) {
-                    $GLOBALS['vnbiz_user'] = $find_context['models'][0]['@user_id'];
-                    // $GLOBALS['vnbiz_user_permissions'] []
-
-                    $permissions = [];
-                    $permissions_scopes = [];
-                    foreach ($find_context['models'] as $useringroup) {
-                        if (isset($useringroup['@usergroup_id'])) {
-                            if (isset($useringroup['@usergroup_id']['permissions'])) {
-                                foreach (explode(',', $useringroup['@usergroup_id']['permissions']) as $per) {
-                                    isset($permissions[$per]) ?: $permissions[$per] = [];
-                                    $permissions[$per][] = $useringroup['@usergroup_id']['id'];
-                                }
-                            }
-                            if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
-                                foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
-                                    $permissions_scopes[$scope] = true;
-                                }
-                            }
-                        }
+                if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
+                    foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
+                        $permissions_scopes[$scope] = true;
                     }
-                    $GLOBALS['vnbiz_user_permissions'] = $permissions;
-                    $GLOBALS['vnbiz_user_permissions_scope'] = $permissions_scopes;
-
-
-                    // if (isset($GLOBALS['vnbiz_user']) && isset($GLOBALS['vnbiz_user']['id'])) {
-
-                    // }
-                } 
-                // else {
-                //     $user = vnbiz_model_find_one('user', ['id' => $_SESSION['user_id']]);
-
-                //     if ($user) {
-                //         $GLOBALS['vnbiz_user'] = $user;
-                //         $GLOBALS['vnbiz_user_permissions'] = [];
-                //         $GLOBALS['vnbiz_user_permissions_scope'] = [];
-                //     } else {
-                //         unset($_SESSION['user_id']);
-                //     }
-                // }
+                }
             }
         }
+        $GLOBALS['vnbiz_user_permissions'] = $permissions;
+        $GLOBALS['vnbiz_user_permissions_scope'] = $permissions_scopes;
     });
 
     vnbiz_add_action("service_user_login", function (&$context) {
@@ -295,11 +210,6 @@ function vnbiz_init_module_user()
 
         $email = $context['params']['email'];
         $password = $context['params']['password'];
-
-        $c = [
-            'model_name' => 'user',
-            'email' => $email
-        ];
 
         $user = vnbiz_model_find_one('user', [
             'email' => $email
@@ -314,19 +224,17 @@ function vnbiz_init_module_user()
         if (!password_verify($password, $user['password'])) {
             $context['code'] = 'invalid_params';
             $context['error'] = "Invalid email or password";
+            //TODO: limit login attempt
             return;
         }
 
         $GLOBALS['vnbiz_user'] = $user;
 
-
         $context['code'] = 'success';
         $context['error'] = null;
         $context['models'] = [$user];
 
-        $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], 'vnbizsecret');
-
-        $_SESSION['user_id'] = $user['id'];
+        $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], VNBIZ_TOKEN_SECRET);
     });
 
     vnbiz_add_action("service_user_me", function (&$context) {
@@ -351,14 +259,5 @@ function vnbiz_init_module_user()
 
     vnbiz_add_action("service_user_logout", function (&$context) {
         $context['code'] = 'success';
-        session_destroy();
     });
-
-    // vnbiz_add_action('sql_gen_index', function (&$context) {
-    // 	isset($context['sql']) ?: $context['sql'] = '';
-    // 	$context['sql'] .= "
-    // 		CREATE UNIQUE INDEX IF NOT EXISTS user_unique_email ON `user` (email);
-    // 	";
-    // });
-
 }
