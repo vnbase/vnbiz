@@ -4,6 +4,9 @@ include __DIR__ . '/base/rb.php';
 include __DIR__ . '/base/div.php';
 include __DIR__ . '/base/jwt.php';
 
+include __DIR__ . '/core/VnBizError.php';
+include __DIR__ . '/core/Actions.php';
+
 include __DIR__ . '/base/hashids/src/Math/MathInterface.php';
 include __DIR__ . '/base/hashids/src/HashidsInterface.php';
 include __DIR__ . '/base/hashids/src/Math/Bc.php';
@@ -11,7 +14,7 @@ include __DIR__ . '/base/hashids/src/Math/Gmp.php';
 include __DIR__ . '/base/hashids/src/HashidsException.php';
 include __DIR__ . '/base/hashids/src/Hashids.php';
 
-include __DIR__ . '/vnbiz_functions.php';
+include __DIR__ . '/core/vnbiz_functions.php';
 
 include __DIR__ . '/modules/systemconfig.php';
 include __DIR__ . '/modules/user.php';
@@ -33,8 +36,11 @@ include __DIR__ . '/modules/monitor.php';
 include __DIR__ . '/modules/useractivity.php';
 include __DIR__ . '/modules/datascope.php';
 
-include __DIR__ . '/vnbiz_model.php';
-include __DIR__ . '/vnbiz_core.php';
+include __DIR__ . '/core/Schema.php';
+include __DIR__ . '/core/Model.php';
+include __DIR__ . '/core/VnBiz.php';
+
+
 
 date_default_timezone_set("UTC");
 ini_set('session.cookie_samesite', 'None');

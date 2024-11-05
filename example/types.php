@@ -74,7 +74,6 @@ vnbiz_model_add('project')
 			}
 			return true;
 		} else {
-			$context['xx'] = [];
 			foreach ($project_ids as $project_id) {
 				if ($project_id == $filter_ids) {
 					return true;

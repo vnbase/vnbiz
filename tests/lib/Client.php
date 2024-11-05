@@ -6,6 +6,7 @@ if (class_exists('Client')) {
 
 class Client
 {
+    private $client_access_token = null;
     /**
      * $formData = [
             'name' => 'John Doe',
@@ -13,12 +14,12 @@ class Client
             'file' => new CURLFile($filePath)  // Attach the file
         ];
      */
-    static function REQUEST($formData, $headers = [], $url = 'http://localhost:80/test/')
+    public function REQUEST($formData, $headers = [], $url = 'http://localhost:80/test/')
     {
 
-        if ($GLOBALS['client_access_token']) {
+        if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
-            $headers[] = 'Authorization: Bearer ' . $GLOBALS['client_access_token'];
+            $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
         }
 
         // Initialize a cURL session
@@ -67,7 +68,7 @@ class Client
             throw new Error('Invalid JSON: ' . $response);
         }
     }
-    static function callService($service, $params = [])
+    public function callService($service, $params = [])
     {
         $payload = [
             'action' => $service
@@ -76,10 +77,10 @@ class Client
             $payload["params[$key]"] = $value;
         }
 
-        return Client::REQUEST($payload);
+        return $this->REQUEST($payload);
     }
 
-    static function model_find($model_name, $filter = [], $meta = [])
+    public function model_find($model_name, $filter = [], $meta = [])
     {
         $payload = [
             'action' => 'model_find',
@@ -91,10 +92,10 @@ class Client
         foreach ($meta as $key => $value) {
             $payload["meta[$key]"] = $value;
         }
-        return Client::REQUEST($payload);
+        return $this->REQUEST($payload);
     }
 
-    static function model_create($model_name, $model)
+    public function model_create($model_name, $model)
     {
         $payload = [
             'action' => 'model_create',
@@ -103,10 +104,10 @@ class Client
         foreach ($model as $key => $value) {
             $payload["model[$key]"] = $value;
         }
-        return Client::REQUEST($payload);
+        return $this->REQUEST($payload);
     }
 
-    static function model_update($model_name, $filter, $model)
+    public function model_update($model_name, $filter, $model)
     {
         $payload = [
             'action' => 'model_update',
@@ -118,27 +119,27 @@ class Client
         foreach ($model as $key => $value) {
             $payload["model[$key]"] = $value;
         }
-        return Client::REQUEST($payload);
+        return $this->REQUEST($payload);
     }
 
-    static function login($email, $password)
+    public function login($email, $password)
     {
-        [$code, $body] = Client::callService('service_user_login', ['email' => $email, 'password' => $password]);
-        $GLOBALS['client_access_token'] = $body['access_token'];
+        [$code, $body] = $this->callService('service_user_login', ['email' => $email, 'password' => $password]);
+        $this->client_access_token = $body['access_token'];
         return [$code, $body];
     }
 
-    static function loginSuper()
+    public function loginSuper()
     {
-        [$code, $body] = Client::login('superadmin@vnbiz.com', 'superadmin');
+        [$code, $body] = $this->login('superadmin@vnbiz.com', 'superadmin');
         if ($code !== 200 || $body['code'] !== 'success') {
             throw new Error("Login Super Failed");
         }
         return [$code, $body];
     }
 
-    static function logout()
+    public function logout()
     {
-        unset($GLOBALS['client_access_token']);
+        unset($this->client_access_token);
     }
 }
