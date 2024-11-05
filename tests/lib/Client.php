@@ -52,8 +52,8 @@ class Client
         }
 
         $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        // print_r("<<< " . json_encode($formData) . "\n");
-        // print_r(">>> " . $response . "\n");
+        print_r("<<< " . json_encode($formData) . "\n");
+        print_r(">>> " . $response . "\n");
         curl_close($ch);
 
         $jsonResponse = json_decode($response, true); // true = return as associative array

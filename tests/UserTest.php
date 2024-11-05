@@ -32,6 +32,13 @@ final class UserTest extends TestCase
         $this->assertArrayHasKey('id', $model, 'has user id');
     }
 
+    public function testPermissionDenied(): void
+    {
+        [$httpcode, $body] = CLIENT::model_find('usergroup');
+        $this->assertEquals('permission', $body['code'],  'permission code.');
+        $this->assertEquals(403, $httpcode,  'Permission denided.');
+    }
+
     public function testUserLogin(): void
     {
         [$httpcode, $body] = CLIENT::login("admin@vnbiz.com", '12345678');

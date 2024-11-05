@@ -240,7 +240,11 @@ class VnBiz
 					}
 			}
 		} catch (VnbizError $e) {
-			http_response_code(400);
+			if ($e->get_status() == 'permission') {
+				http_response_code(403);
+			} else {
+				http_response_code(400);
+			}
 			$result = [
 				'code' => $e->get_status(),
 				'error' => $e->getMessage(),
@@ -255,6 +259,7 @@ class VnBiz
 				'stack' => $e->getTraceAsString()
 			];
 		};
+
 
 		vnbiz_do_action('web_after', $context);
 		return $result;
