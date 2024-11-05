@@ -45,7 +45,7 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
 RUN php composer-setup.php
 RUN php -r "unlink('composer-setup.php');"
-RUN mv composer.phar /usr/local/bin/composer
+RUN mv ./composer.phar /usr/local/bin/composer
 
 # Your PHP application may require additional PHP extensions to be installed
 # manually. For detailed instructions for installing extensions can be found, see
@@ -99,7 +99,7 @@ RUN echo "\nextension=redis.so \n" >> "$PHP_INI_DIR/php.ini"
 # Copy the app dependencies from the previous install stage.
 COPY composer.json .
 COPY composer.lock .
-RUN composer install
+RUN ./composer.phar install
 COPY . .
 # Copy the app files from the app directory.
 # COPY ./src /var/www/html/src
