@@ -91,7 +91,6 @@ final class UserTest extends TestCase
         [$status, $body] = $client->login("user_inactive@vnbiz.com", '12345678');
         $this->assertEquals(200, $status,  'Login success');
         $this->assertArrayHasKey('access_token', $body,  'access_token responses');
-        $access_token = $body['access_token'];
 
         // admin changes status
         $super->loginSuper();

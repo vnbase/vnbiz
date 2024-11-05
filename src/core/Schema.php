@@ -10,21 +10,22 @@ class Schema
 
 	public $schema = [];
 
-	public $has_tags = false; // done
+	public bool $has_tags = false;
 
-	public $has_comments = false; //done
+	public bool $has_comments = false; 
 
-	public $has_history = false; //done
+	public bool $has_history = false; 
 
-	public $has_reviews = false;    //TODO
+	public bool $has_reviews = false; 
 
-	public $has_trash = false;  // done
+	public bool $has_trash = false; 
 
-	public $has_usermarks = [];  // done
+	public $has_usermarks = []; 
 
 	public $back_refs = [];
 
 	public $text_search = false;
+
 	public $ui_meta = [];
 
 	public function __construct($model_name)
@@ -32,7 +33,7 @@ class Schema
 		$this->model_name = $model_name;
 	}
 
-	public function model_name()
+	public function model_name(): string
 	{
 		return $this->model_name;
 	}
@@ -55,7 +56,7 @@ class Schema
 		];
 	}
 
-	public function set_field($field_name, $desc)
+	public function set_field($field_name, $desc): void
 	{
 
 		if (isset($this->schema[$field_name])) {
@@ -66,7 +67,7 @@ class Schema
 		$this->schema[$field_name] = $desc;
 	}
 
-	public function get_fields_by_type($type)
+	public function get_fields_by_type($type): Array
 	{
 		$result = [];
 		// echo json_encode($this->schema);
@@ -78,12 +79,12 @@ class Schema
 		return $result;
 	}
 
-	public function get_field_names()
+	public function get_field_names(): Array
 	{
 		return array_keys($this->schema);
 	}
 
-	public function crop(&$model)
+	public function crop(&$model): Array
 	{
 		$new_model = [];
 

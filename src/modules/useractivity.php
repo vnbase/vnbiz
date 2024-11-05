@@ -20,6 +20,7 @@ function vnbiz_getIPAddress()
     }
     return $ip;
 }
+
 function vnbiz_getBrowserInfo()
 {
     $u_agent = $_SERVER['HTTP_USER_AGENT'];
