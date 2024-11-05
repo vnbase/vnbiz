@@ -99,14 +99,14 @@ final class UserTest extends TestCase
         $this->assertArrayHasKey('old_model', $body,  'has updated object');
 
         // // user get the error code
-        // [$httpcode, $body] = $client->callService('service_user_me');
-        // $this->assertEquals(403, $httpcode,  'Invalid status');
-        // $this->assertEquals('user_status', $body['code'],  'user_status error');
+        [$httpcode, $body] = $client->refreshToken();
+        $this->assertEquals(403, $httpcode,  'Invalid status');
+        $this->assertEquals('user_status', $body['code'],  'user_status error');
 
         // // user can't login
-        // [$httpcode, $body] = $client->login("user_inactive@vnbiz.com", '12345678');
-        // $this->assertEquals(403, $httpcode,  'Invalid status');
-        // $this->assertEquals('user_status', $body['code'],  'user_status error');
+        [$httpcode, $body] = $client->login("user_inactive@vnbiz.com", '12345678');
+        $this->assertEquals(403, $httpcode,  'Invalid status');
+        $this->assertEquals('user_status', $body['code'],  'user_status error');
 
     }
 }

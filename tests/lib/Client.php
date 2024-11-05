@@ -7,6 +7,7 @@ if (class_exists('Client')) {
 class Client
 {
     private $client_access_token = null;
+    private $client_refresh_token = null;
     /**
      * $formData = [
             'name' => 'John Doe',
@@ -126,16 +127,44 @@ class Client
     {
         [$code, $body] = $this->callService('service_user_login', ['username' => $username, 'password' => $password]);
         $this->client_access_token = $body['access_token'];
+        $this->client_refresh_token = $body['refresh_token'];
         return [$code, $body];
     }
 
     public function loginOAuthPassword($username, $password)
     {
-        [$code, $body] = $this->callService('service_user_login', ['username' => $username, 'password' => $password]);
+        [$code, $body] = $this->REQUEST([
+            'grant_type' => 'password',
+            'username' => $username,
+            'password' => $password
+        ]);
         $this->client_access_token = $body['access_token'];
+        $this->client_refresh_token = $body['refresh_token'];
         return [$code, $body];
     }
 
+    public function refreshToken($refresh_token = null)
+    {
+        $val = $this->client_refresh_token;
+        if ($refresh_token !== null) {
+            $val = $refresh_token;
+        }
+        
+        $this->client_access_token = null;
+        [$code, $body] = $this->REQUEST([
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $val
+        ]);
+        
+        if (isset($body['access_token'])) {
+            $this->client_access_token = $body['access_token'];
+        };
+        if (isset($body['refresh_token'])) {
+            $this->client_refresh_token = $body['refresh_token'];
+        };
+        
+        return [$code, $body];
+    }
     public function loginSuper()
     {
         [$code, $body] = $this->login('superadmin@vnbiz.com', 'superadmin');
