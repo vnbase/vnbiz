@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         testdox="true"
          bootstrap="vendor/autoload.php"
          cacheDirectory=".phpunit.cache"
          executionOrder="depends,defects"
@@ -10,8 +11,14 @@
          failOnRisky="true"
          failOnWarning="true">
     <testsuites>
-        <testsuite name="default">
-            <directory>tests</directory>
+        <testsuite name="core">
+            <directory>tests/core</directory>
+        </testsuite>
+        <testsuite name="user">
+            <directory>tests/user</directory>
+        </testsuite>
+        <testsuite name="project">
+            <directory>tests/project</directory>
         </testsuite>
     </testsuites>
 

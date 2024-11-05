@@ -13,7 +13,8 @@ done
 echo "############################# START TESTING ###########################"
 
 # docker-compose exec webapp $TEST_COMMAND
-sudo docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml 
+#  --testsuite project
+sudo docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
 TEST_RESULT=$?
 echo "############################# END TESTING ###########################"
 
