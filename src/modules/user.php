@@ -270,8 +270,6 @@ function vnbiz_init_module_user()
         $context['error'] = null;
         $context['models'] = [$user];
 
-
-
         $expire_in = 900; //15 minutes
         $context['refresh_token'] = vnbiz_token_sign([
             'typ' => 'refresh',

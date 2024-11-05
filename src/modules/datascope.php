@@ -33,10 +33,10 @@ function vnbiz_current_user_inaccessable_datascope($scopes)
     if (!is_array($scopes)) {
         throw new VnBizError('$scopes must be array');
     }
-    $user_permissions_scopes = isset($GLOBALS['vnbiz_user_permissions_scope']) ? $GLOBALS['vnbiz_user_permissions_scope'] : [];
+    $user_permissions_scope = isset($GLOBALS['vnbiz_user_permissions_scope']) ? $GLOBALS['vnbiz_user_permissions_scope'] : [];
     foreach ($scopes as $scope) {
         $valid = false;
-        foreach ($user_permissions_scopes as $key => $value) {
+        foreach ($user_permissions_scope as $key => $value) {
             if (str_starts_with($scope, $key)) {
                 $valid = true;
                 break;
