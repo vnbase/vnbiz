@@ -109,4 +109,32 @@ final class UserTest extends TestCase
         $this->assertEquals('user_status', $body['code'],  'user_status error');
 
     }
+    
+    /**
+     * 1. User login success and get access_token & refresh_token,
+     * 2. User change password
+     * 3. User refresh token with the refresh_token
+     * 4. Failer with 403
+     **/
+    public function test_Login_OwnerPassword_Changed(): void
+    {
+        $client = new Client();
+        [$status, $body] = $client->model_create('user', [
+            'email' => 'user_password_change@vnbiz.com',
+            'password' => '12345678'
+        ]);
+        $this->assertEquals(200, $status,  'create user');
+
+        [$status, $body] = $client->login("user_password_change@vnbiz.com", '12345678');
+        $this->assertEquals(200, $status,  'Login success');
+        $this->assertArrayHasKey('access_token', $body,  'access_token responses');
+        $this->assertArrayHasKey('refresh_token', $body,  'refresh_token responses');
+
+        [$status, $body] = $client->model_update('user', ['id' => $body['models'][0]['id']], ['password' => '87654321']);
+        $this->assertEquals(200, $status,  'update user by id successfully');
+        $this->assertArrayHasKey('old_model', $body,  'has updated object');
+
+        [$status, $body] = $client->refreshToken();
+        $this->assertEquals(401, $status,  'Invalid status');
+    }
 }

@@ -62,6 +62,14 @@ function vnbiz_user_add_default()
     return $user;
 }
 
+function vnbiz_user_get_public_hashed_password($user)
+{
+    if (isset($user['password']) && strlen($user['password']) > 5) {
+        return MD5(substr($user['password'], 0, 5) . substr($user['password'], -5));
+    }
+    return '';
+}
+
 function vnbiz_user_all_permissions($user_id)
 {
     $useringroups = vnbiz_model_find('useringroup', ['user_id' => $user_id], ['ref' => true, 'limit' => 1000]);
@@ -211,9 +219,13 @@ function vnbiz_init_module_user()
         $user = null;
         if (isset($context['params']['refresh_token'])) {
             $arr = vnbiz_token_verify($context['params']['refresh_token'], VNBIZ_TOKEN_SECRET);
-            if ($arr &&  isset($arr['sub']) && isset($arr['typ']) && $arr['typ'] === 'refresh') {
+            if ($arr &&  isset($arr['sub']) && isset($arr['typ']) && $arr['typ'] === 'refresh' && isset($arr['pas'])) {
                 $user = vnbiz_model_find_one('user', ['id' => vnbiz_decrypt_id($arr['sub'])]);
                 if (!$user) {
+                    throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
+                }
+                $hashed_pass = vnbiz_user_get_public_hashed_password($user);
+                if ($hashed_pass !== $arr['pas']) {
                     throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
                 }
             } else {
@@ -258,6 +270,7 @@ function vnbiz_init_module_user()
             return;
         }
 
+
         if ($user['status'] !== 'active') {
             throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
         }
@@ -274,6 +287,7 @@ function vnbiz_init_module_user()
         $context['refresh_token'] = vnbiz_token_sign([
             'typ' => 'refresh',
             'sub' => vnbiz_encrypt_id($user['id']),
+            'pas' => vnbiz_user_get_public_hashed_password($user)
         ], VNBIZ_TOKEN_SECRET);
 
         $context['access_token'] = vnbiz_token_sign([
