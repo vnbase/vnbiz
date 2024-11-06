@@ -83,9 +83,39 @@ RUN docker-php-ext-enable imagick;
 
 RUN rm -rf /var/lib/apt/lists/* 
 
-# This causes error in some dockerds:
-#RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+RUN echo " \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"LABEL\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"EPHEMERAL\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"URL\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"HTTPS\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"HTTP\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"FTP\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"MVG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"M2V\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"MPEG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"MPG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"WEBP\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"WMV\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"AVI\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"MKV\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"MP4\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"PSD\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"TIFF\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"PNG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"JPEG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"JPG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"GIF\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"BMP\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"ICO\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"SVG\" /> \
+<policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> \
+" >> /etc/ImageMagick-6/policy.xml
 
+
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+RUN echo "upload_max_filesize = 50M\npost_max_size = 50M" > /usr/local/etc/php/conf.d/uploads.ini
     #
 # Add PECL extensions, see
 # https://github.com/docker-library/docs/tree/master/php#pecl-extensions

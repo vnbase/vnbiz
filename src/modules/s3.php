@@ -178,11 +178,8 @@ function vnbiz_s3_get_url_gen($path)
     return $url;
 }
 
-
-function vnbiz_s3_upload($file_name, $file_path)
+function vnbiz_s3_upload($file_name, $file_path, $original_name = null)
 {
-    // $aws_region = "ap-southeast-1";
-    // $s3_bucket = "this.is.for.testing";
     $aws_id = AWS_ACCESS_KEY_ID;
     $aws_key = AWS_ACCESS_KEY_SECRET;
     $aws_region = AWS_REGION;
@@ -196,14 +193,10 @@ function vnbiz_s3_upload($file_name, $file_path)
     $file_name = urlencode($file_name);
     $file_type = mime_content_type($file_path);
     $file_hash = hash_file('sha256', $file_path);
-    // $md5 = md5_file($path);
 
     date_default_timezone_set('UTC');
-    $date = date("Ymd"); //date(DATE_ISO8601, strtotime('2010-12-30 23:21:46'));
-    $timestamp = date('Ymd\THis\Z'); //;date('Ymd\THisZ\Z');
-
-    //hash_hmac('sha256', 'hello, world!', 'mykey');
-    //urlencode
+    $date = date("Ymd");
+    $timestamp = date('Ymd\THis\Z');
 
     $path = '/' . $s3_bucket . "/s3/$file_name";
     $method = 'PUT';
@@ -234,7 +227,6 @@ function vnbiz_s3_upload($file_name, $file_path)
     $SigningKey = hash_hmac('sha256', 'aws4_request', $DateRegionServiceKey, true);
     $signature = hash_hmac('sha256', $StringToSign, $SigningKey);
 
-
     $authorization = "AWS4-HMAC-SHA256 "
         . "Credential=$aws_id/$date/$aws_region/$aws_service/aws4_request,"
         . "SignedHeaders=content-length;content-type;host;x-amz-content-sha256;x-amz-date,"
@@ -248,9 +240,11 @@ function vnbiz_s3_upload($file_name, $file_path)
         'x-amz-date: ' . $timestamp,
         'Expect:',
         'Accept:',
-        // 'Content-Disposition: attachment; filename="' . . '"'
     ];
 
+    if ($original_name) {
+        $headers[] = 'Content-Disposition: attachment; filename="' . $original_name . '"';
+    }
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "$s3_scheme://$host" . $path);
@@ -260,24 +254,15 @@ function vnbiz_s3_upload($file_name, $file_path)
     curl_setopt($ch, CURLOPT_INFILE, $fh_res);
     curl_setopt($ch, CURLOPT_INFILESIZE, $file_size);
 
-    // curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    // curl_setopt($ch, CURLOPT_VERBOSE, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    // curl_setopt($ch, CURLINFO_HEADER_OUT, true);
 
     $result = curl_exec($ch);
-    // $err = curl_error($ch);
 
     $information = curl_getinfo($ch);
     fclose($fh_res);
     curl_close($ch);
 
-    // var_dump($information);
-
     return $result;
-    // echo "\n=======================\n";
-    // var_dump($StringToSign);
-    // var_dump($CanonicalRequest);
 }
 
 function vnbiz_init_module_s3()
@@ -310,7 +295,7 @@ function vnbiz_init_module_s3()
         ->db_begin_create(function (&$context) {
             $file_id = vnbiz_unique_text();
             $model = &$context['model'];
-            // $file_name = $context['model']['name'];
+            $original_file_name = $context['model']['name'];
             // $file_type = $context['model']['type'];
             // $file_size = $context['model']['size'];
 
@@ -336,7 +321,10 @@ function vnbiz_init_module_s3()
                 $file_name = $file_id . '_' . $i;
                 if (isset($model['path_' . $i])) {
                     $file_path = $model['path_' . $i];
-                    $result = vnbiz_s3_upload($file_name, $file_path);
+
+                    $ofn = $i == 0 ? $original_file_name : ($i . '_' . $original_file_name);
+
+                    $result = vnbiz_s3_upload($file_name, $file_path, $ofn);
                     if ($result) {
                         $uploaded++;
                         $model['path_' . $i] = '/s3/' . $file_name;
@@ -483,7 +471,7 @@ trait vnbiz_trait_s3_file
             }
             foreach ($models as &$model) {
                 if (isset($model[$field_name]) && isset($s3s_map[$model[$field_name]])) {
-                    $model['@' . $field_name] = $s3s_map[$model['id']];
+                    $model['@' . $field_name] = $s3s_map[$model[$field_name]];
                     if ($model['@' . $field_name]) {
                         $sizes = $image_sizes;
                         $sizes[0] = [$model['@' . $field_name]['width'], $model['@' . $field_name]['height']];
@@ -523,6 +511,7 @@ trait vnbiz_trait_s3_file
                     'path_0' => $file_path
                 ]);
                 $context['model'][$field_name] = $result['id'];
+                $context['model']['@' . $field_name] = $result;
             }
         };
 
@@ -547,7 +536,7 @@ trait vnbiz_trait_s3_file
             }
             foreach ($models as &$model) {
                 if (isset($model[$field_name]) && isset($s3s_map[$model[$field_name]])) {
-                    $model['@' . $field_name] = $s3s_map[$model['id']];
+                    $model['@' . $field_name] = $s3s_map[$model[$field_name]];
                 }
             }
         });
