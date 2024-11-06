@@ -306,8 +306,7 @@ function vnbiz_init_module_user()
     vnbiz_add_action("service_user_me", function (&$context) {
         $user = vnbiz_user();
         if (!$user) {
-            $context['code'] = 'login_required';
-            $context['models'] = [];
+            throw new VnBizError('Login required', "login_required", null, null, 401);
             return;
         }
         $user = vnbiz_model_find_one('user', ['id' => $user['id']]);
