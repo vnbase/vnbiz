@@ -8,23 +8,96 @@ function vnbiz_unique_text()
     return bin2hex($bytes);
 }
 
+// class VnbizImage
+// {
+//     private $image;
+
+//     private $func_save;
+
+//     private $width;
+//     private $height;
+
+//     function __construct($file_path)
+//     {
+//         $this->image = $this->read_image_file($file_path);
+//         $this->width  = imagesx($this->image);
+//         $this->height = imagesy($this->image);
+//     }
+
+//     public function  get_width()
+//     {
+//         return $this->width;
+//     }
+
+//     public function get_height()
+//     {
+//         return $this->height;
+//     }
+
+//     function read_image_file($path)
+//     {
+//         $type = mime_content_type($path);
+//         switch ($type) {
+//             case 'image/gif':
+//                 $image = imagecreatefromgif($path);
+//                 $this->func_save = 'imagegif';
+//                 break;
+//             case 'image/bmp':
+//                 $image = imagecreatefrombmp($path);
+//                 $this->func_save = 'imagejpeg';
+//                 break;
+//             case 'image/jpeg':
+//                 $image = imagecreatefromjpeg($path);
+//                 $this->func_save = 'imagejpeg';
+//                 break;
+//             case 'image/png':
+//                 $image = imagecreatefrompng($path);
+//                 $this->func_save = 'imagepng';
+//                 break;
+//             case 'image/webp':
+//                 $image = imagecreatefromwebp($path);
+//                 $this->func_save = 'imagewebp';
+//                 break;
+//             default:
+//                 throw new Error("Unsupported image type: " . $type, 'unsupport');
+//         }
+//         return $image;
+//     }
+
+//     function scale($file_name, $width, $height)
+//     {
+//         $w = imagesx($this->image);
+//         $h = imagesy($this->image);
+//         $r = $w / $h;
+
+//         $new_width = $r * $height;
+//         if ($new_width < $width) {
+//             $new_width = $width;
+//         }
+
+//         $img = imagescale($this->image, $new_width);
+//         $w = imagesx($img);
+//         $h = imagesy($img);
+
+//         $img = imagecrop($img, ['x' => ($w / 2) - ($width / 2), 'y' => ($h / 2) - ($height / 2), 'width' => $width, 'height' => $height]);
+//         ($this->func_save)($img, $file_name);
+//     }
+// }
+
 class VnbizImage
 {
     private $image;
-
-    private $func_save;
-
     private $width;
     private $height;
 
     function __construct($file_path)
     {
-        $this->image = $this->read_image_file($file_path);
-        $this->width  = imagesx($this->image);
-        $this->height = imagesy($this->image);
+        $this->image = new Imagick($file_path);
+        $this->width = $this->image->getImageWidth();
+        $this->height = $this->image->getImageHeight();
     }
 
-    public function  get_width()
+    public function get_width()
     {
         return $this->width;
     }
@@ -34,53 +107,12 @@ class VnbizImage
         return $this->height;
     }
 
-    function read_image_file($path)
-    {
-        $type = mime_content_type($path);
-        switch ($type) {
-            case 'image/gif':
-                $image = imagecreatefromgif($path);
-                $this->func_save = 'imagegif';
-                break;
-            case 'image/bmp':
-                $image = imagecreatefrombmp($path);
-                $this->func_save = 'imagejpeg';
-                break;
-            case 'image/jpeg':
-                $image = imagecreatefromjpeg($path);
-                $this->func_save = 'imagejpeg';
-                break;
-            case 'image/png':
-                $image = imagecreatefrompng($path);
-                $this->func_save = 'imagepng';
-                break;
-            case 'image/webp':
-                $image = imagecreatefromwebp($path);
-                $this->func_save = 'imagewebp';
-                break;
-            default:
-                throw new Error("Unsupported image type: " . $type, 'unsupport');
-        }
-        return $image;
-    }
-
     function scale($file_name, $width, $height)
     {
-        $w = imagesx($this->image);
-        $h = imagesy($this->image);
-        $r = $w / $h;
-
-        $new_width = $r * $height;
-        if ($new_width < $width) {
-            $new_width = $width;
-        }
-
-        $img = imagescale($this->image, $new_width);
-        $w = imagesx($img);
-        $h = imagesy($img);
-
-        $img = imagecrop($img, ['x' => ($w / 2) - ($width / 2), 'y' => ($h / 2) - ($height / 2), 'width' => $width, 'height' => $height]);
-        ($this->func_save)($img, $file_name);
+        $temp_image = clone $this->image;
+        $temp_image->cropThumbnailImage($width, $height);
+        $temp_image->writeImage($file_name);
+        $temp_image->destroy();
     }
 }
 
@@ -254,6 +286,20 @@ function vnbiz_init_module_s3()
     //     if ($context['model_name'] === 's3') {
     //     }
     // });
+
+    $after_create_or_update = function (&$context) {
+        if (isset($context['model'])) {
+            $model = &$context['model'];
+            if (isset($model['path_thumbnail'])) {
+                $model['url_thumbnail'] = vnbiz_s3_get_url_gen($model['path_thumbnail']);
+            }
+            for ($j = 0; $j < 10; $j++) {
+                if (isset($model['path_' . $j])) {
+                    $model['url_' . $j] = vnbiz_s3_get_url_gen($model['path_' . $j]);
+                }
+            }
+        }
+    };
     vnbiz_model_add('s3')
         ->string('name', 'type')
         ->text('path_thumbnail')
@@ -264,9 +310,26 @@ function vnbiz_init_module_s3()
         ->db_begin_create(function (&$context) {
             $file_id = vnbiz_unique_text();
             $model = &$context['model'];
-            $file_name = $context['model']['name'];
+            // $file_name = $context['model']['name'];
             // $file_type = $context['model']['type'];
             // $file_size = $context['model']['size'];
+
+            unset($model['path_thumbnail']); // remove thumbnail path
+
+            if (isset($model['path_0'])) {
+                $file_path = $model['path_0'];
+                $file_name = $file_id . '_t';
+                $gen_file_path = $file_path . '_t';
+
+                $genereated_file_path = vnbiz_generate_thumbnail($file_path, $gen_file_path, 200, 200);
+                if ($genereated_file_path) {
+                    $result = vnbiz_s3_upload($file_name, $genereated_file_path);
+                    if ($result) {
+                        $model['path_thumbnail'] = '/s3/' . $file_name;
+                    }
+                    unlink($gen_file_path);
+                }
+            }
 
             $uploaded = 0;
             for ($i = 0; $i < 10; $i++) {
@@ -299,40 +362,43 @@ function vnbiz_init_module_s3()
                 }
             }
         })
+        ->db_after_create($after_create_or_update)
+        ->db_after_update($after_create_or_update)
     ;
 }
 
-trait vnbiz_trait_s3_file {
+trait vnbiz_trait_s3_file
+{
 
-	function s3_image($field_name, ...$sizes)
-	{
-		$this->schema->add_field($field_name, 'image');
+    function s3_image($field_name, ...$sizes)
+    {
+        $this->schema->add_field($field_name, 'image');
 
-		$image_sizes = [];
-		for ($x = 0; $x < sizeof($sizes); $x++) {
-			$image_sizes[$x] = $sizes[$x];
-			sizeof($image_sizes[$x]) > 1 ?: $image_sizes[$x][1] = $image_sizes[$x][0];
-		}
-		array_unshift($image_sizes, ['', '']);
+        $image_sizes = [];
+        for ($x = 0; $x < sizeof($sizes); $x++) {
+            $image_sizes[$x] = $sizes[$x];
+            sizeof($image_sizes[$x]) > 1 ?: $image_sizes[$x][1] = $image_sizes[$x][0];
+        }
+        array_unshift($image_sizes, ['', '']);
 
-		$upload_file = function (&$context) use ($field_name, $sizes, $image_sizes) {
-			if (isset($context['model']) && isset($context['model'][$field_name])) {
-				if (is_string($context['model'][$field_name])) {
-					$max_file_size_mb = 50;
-					$url = $context['model'][$field_name];
-					$filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
+        $upload_file = function (&$context) use ($field_name, $sizes, $image_sizes) {
+            if (isset($context['model']) && isset($context['model'][$field_name])) {
+                if (is_string($context['model'][$field_name])) {
+                    $max_file_size_mb = 50;
+                    $url = $context['model'][$field_name];
+                    $filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
 
                     if ($filemodel === null) {
-						unset($context['model'][$field_name]);
-						return;
-					}
-					$context['model'][$field_name] = $filemodel;
-				}
+                        unset($context['model'][$field_name]);
+                        return;
+                    }
+                    $context['model'][$field_name] = $filemodel;
+                }
 
-				$file_name = $context['model'][$field_name]['file_name'];
-				$file_size = $context['model'][$field_name]['file_size'];
-				$file_path = $context['model'][$field_name]['file_path'];
-				$file_type = $context['model'][$field_name]['file_type'];
+                $file_name = $context['model'][$field_name]['file_name'];
+                $file_size = $context['model'][$field_name]['file_size'];
+                $file_path = $context['model'][$field_name]['file_path'];
+                $file_type = $context['model'][$field_name]['file_type'];
 
                 // assure $file_type is image;
                 $image_types = ['image/gif', 'image/bmp', 'image/jpeg', 'image/png', 'image/webp'];
@@ -340,64 +406,64 @@ trait vnbiz_trait_s3_file {
                     throw new VnBizError("In field $field_name, Unsupported image type: " . $file_type, 's3_unsupported_image_type');
                 }
 
-				$context['temp_files'] = [];
+                $context['temp_files'] = [];
 
-				// $image = new \Gmagick($file_path);
-				$image = new \VnbizImage($file_path);
+                // $image = new \Gmagick($file_path);
+                $image = new \VnbizImage($file_path);
 
-				$s3_model = [
-					'name' => $file_name,
-					'size' => $file_size,
-					'type' => $file_type,
-					'path_0' => $file_path,
-					'is_image' => true,
-					'width' => $image->get_width(),
-					'height' => $image->get_Height(),
-				];
+                $s3_model = [
+                    'name' => $file_name,
+                    'size' => $file_size,
+                    'type' => $file_type,
+                    'path_0' => $file_path,
+                    'is_image' => true,
+                    'width' => $image->get_width(),
+                    'height' => $image->get_Height(),
+                ];
 
-				for ($i = 1; $i < 10; $i++) {
-					if ($i - 1 < sizeof($sizes)) {
-						$size = $sizes[$i - 1];
-						sizeof($size) > 1 ?: $size[1] = $size[0];
+                for ($i = 1; $i < 10; $i++) {
+                    if ($i - 1 < sizeof($sizes)) {
+                        $size = $sizes[$i - 1];
+                        sizeof($size) > 1 ?: $size[1] = $size[0];
 
-						$new_file = $file_path . '_' . $i;
+                        $new_file = $file_path . '_' . $i;
 
-						$image->scale($new_file, $size[0], $size[1]);
-						//TODO; resizeimage
-						$s3_model['path_' . $i] = $new_file;
-						$context['temp_files'][] = $new_file;
-					}
-				}
+                        $image->scale($new_file, $size[0], $size[1]);
+                        //TODO; resizeimage
+                        $s3_model['path_' . $i] = $new_file;
+                        $context['temp_files'][] = $new_file;
+                    }
+                }
 
-				$s3 = vnbiz_model_create('s3', $s3_model);
-                
-				$context['model']['@' . $field_name] = &$s3;
-				if ($context['model']['@' . $field_name]) {
-					$sizes = $image_sizes;
-					$sizes[0] = [$s3['width'], $s3['height']];
-					$context['model']['@' . $field_name]['@image_sizes'] = $sizes;
-				}
+                $s3 = vnbiz_model_create('s3', $s3_model);
 
-				$context['model'][$field_name] = $s3['id'];
-			}
-		};
+                $context['model']['@' . $field_name] = &$s3;
+                if ($context['model']['@' . $field_name]) {
+                    $sizes = $image_sizes;
+                    $sizes[0] = [$s3['width'], $s3['height']];
+                    $context['model']['@' . $field_name]['@image_sizes'] = $sizes;
+                }
 
-		$this->db_begin_create($upload_file);
-		$this->db_begin_update($upload_file);
+                $context['model'][$field_name] = $s3['id'];
+            }
+        };
 
-		$delete_files = function (&$context) {
-			if (isset($context['temp_files'])) {
-				foreach ($context['temp_files'] as $path) {
-					try {
-						unlink($path);
-					} catch (\Exception $e) {
-					}
-				}
-			}
-		};
+        $this->db_begin_create($upload_file);
+        $this->db_begin_update($upload_file);
 
-		$this->db_after_commit_create($delete_files);
-		$this->db_after_commit_update($delete_files);
+        $delete_files = function (&$context) {
+            if (isset($context['temp_files'])) {
+                foreach ($context['temp_files'] as $path) {
+                    try {
+                        unlink($path);
+                    } catch (\Exception $e) {
+                    }
+                }
+            }
+        };
+
+        $this->db_after_commit_create($delete_files);
+        $this->db_after_commit_update($delete_files);
 
         $this->db_after_find(function (&$context) use ($field_name, $image_sizes) {
             if (!isset($context['models'])) {
@@ -425,44 +491,43 @@ trait vnbiz_trait_s3_file {
                     }
                 }
             }
-
         });
-		return $this;
-	}
+        return $this;
+    }
 
-	public function s3_file($field_name)
-	{
-		$this->schema->add_field($field_name, 'file');
+    public function s3_file($field_name)
+    {
+        $this->schema->add_field($field_name, 'file');
 
-		$upload_file = function (&$context) use ($field_name) {
-			if (isset($context['model']) && isset($context['model'][$field_name])) {
-				if (is_string($context['model'][$field_name])) {
-					$max_file_size_mb = 50;
-					$url = $context['model'][$field_name];
-					$filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
-					if ($filemodel === null) {
-						unset($context['model'][$field_name]);
-						return;
-					}
-					$context['model'][$field_name] = $filemodel;
-				}
-				
-				$file_name = $context['model'][$field_name]['file_name'];
-				$file_size = $context['model'][$field_name]['file_size'];
-				$file_path = $context['model'][$field_name]['file_path'];
-				$file_type = $context['model'][$field_name]['file_type'];
-				$result = vnbiz_model_create('s3', [
-					'name' => $file_name,
-					'size' => $file_size,
-					'type' => $file_type,
-					'path_0' => $file_path
-				]);
-				$context['model'][$field_name] = $result['id'];
-			}
-		};
+        $upload_file = function (&$context) use ($field_name) {
+            if (isset($context['model']) && isset($context['model'][$field_name])) {
+                if (is_string($context['model'][$field_name])) {
+                    $max_file_size_mb = 50;
+                    $url = $context['model'][$field_name];
+                    $filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
+                    if ($filemodel === null) {
+                        unset($context['model'][$field_name]);
+                        return;
+                    }
+                    $context['model'][$field_name] = $filemodel;
+                }
 
-		$this->db_begin_create($upload_file);
-		$this->db_begin_update($upload_file);
+                $file_name = $context['model'][$field_name]['file_name'];
+                $file_size = $context['model'][$field_name]['file_size'];
+                $file_path = $context['model'][$field_name]['file_path'];
+                $file_type = $context['model'][$field_name]['file_type'];
+                $result = vnbiz_model_create('s3', [
+                    'name' => $file_name,
+                    'size' => $file_size,
+                    'type' => $file_type,
+                    'path_0' => $file_path
+                ]);
+                $context['model'][$field_name] = $result['id'];
+            }
+        };
+
+        $this->db_begin_create($upload_file);
+        $this->db_begin_update($upload_file);
 
         $this->db_after_find(function (&$context) use ($field_name) {
             if (!isset($context['models'])) {
@@ -485,9 +550,8 @@ trait vnbiz_trait_s3_file {
                     $model['@' . $field_name] = $s3s_map[$model['id']];
                 }
             }
-
         });
 
-		return $this;
-	}
+        return $this;
+    }
 }

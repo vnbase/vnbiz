@@ -28,9 +28,15 @@ final class S3Test extends TestCase
         $this->assertIsNumeric($model['created_at'], 'created_at is number');
 
         $this->assertArrayHasKey('image_1', $model, 'model has image_1');
+
         $this->assertArrayHasKey('@image_1', $model, 'model has image_1');
         $this->assertIsArray($model['@image_1'], 'image_1 is array');
+        
+        $this->assertArrayHasKey('path_thumbnail', $model['@image_1'], 'image_1 has path_thumbnail');
+        $this->assertArrayHasKey('url_thumbnail', $model['@image_1'], 'image_1 has url_thumbnail');
+
         $this->assertArrayHasKey('path_0', $model['@image_1'], 'image_1 has path_0');
+        $this->assertArrayHasKey('url_0', $model['@image_1'], 'image_1 has url_0');
 
         [$status, $body] = $client->model_find('testmodela', $model['id']);
         $this->assertEquals(200, $status, 'find model returns 200');

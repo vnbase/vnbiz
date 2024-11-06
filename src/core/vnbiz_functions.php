@@ -592,3 +592,30 @@ function vnbiz_download_file_from_url($url, $max_size_mb)
         'file_type' => $information['content_type']
     ];
 }
+
+function vnbiz_generate_thumbnail($source_file_path, $thumbnail_path, $width, $height, $quality = 80)
+{
+    try {
+        $imagick = new Imagick($source_file_path);
+
+        // Resize the image while maintaining aspect ratio
+        $imagick->thumbnailImage($width, $height, true);
+
+        // Generate a temporary file path for the thumbnail
+        // $thumbnail_path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '' . basename($source_file_path);
+
+        $imagick->setImageFormat('jpeg');
+        $imagick->setImageCompressionQuality($quality);
+        // Save the thumbnail
+        $imagick->writeImage($thumbnail_path);
+
+        // Clear resources
+        $imagick->clear();
+        $imagick->destroy();
+
+        return $thumbnail_path;
+    } catch (Exception $e) {
+        error_log("Error generating thumbnail: " . $e->getMessage());
+        return false;
+    }
+}

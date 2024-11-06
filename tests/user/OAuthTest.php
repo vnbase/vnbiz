@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-include_once("lib/Client.php");
+require(__DIR__ . '/../lib/Client.php');
 
 use PHPUnit\Framework\TestCase;
 
