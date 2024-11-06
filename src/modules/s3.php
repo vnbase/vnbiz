@@ -256,9 +256,10 @@ function vnbiz_init_module_s3()
     // });
     vnbiz_model_add('s3')
         ->string('name', 'type')
+        ->text('path_thumbnail')
         ->bool('is_image')
         ->int('size', 'width', 'height')
-        ->string('path_0', 'path_1', 'path_2', 'path_3', 'path_4', 'path_5', 'path_6', 'path_7', 'path_8', 'path_9')
+        ->text('path_0', 'path_1', 'path_2', 'path_3', 'path_4', 'path_5', 'path_6', 'path_7', 'path_8', 'path_9')
         ->no_update()
         ->db_begin_create(function (&$context) {
             $file_id = vnbiz_unique_text();
@@ -282,11 +283,19 @@ function vnbiz_init_module_s3()
                 }
             }
         })
-        ->db_after_get(function (&$context) {
-            $model = &$context['model'];
-            for ($i = 0; $i < 10; $i++) {
-                if (isset($model['path_' . $i]) && $model['path_' . $i] != null) {
-                    $model['url_' . $i] = vnbiz_s3_get_url_gen($model['path_' . $i]);
+        ->db_after_find(function (&$context) {
+            if (!isset($context['models'])) {
+                return;
+            }
+            $models = &$context['models'];
+            foreach ($models as &$model) {
+                if (isset($model['path_thumbnail'])) {
+                    $model['url_thumbnail'] = vnbiz_s3_get_url_gen($model['path_thumbnail']);
+                }
+                for ($j = 0; $j < 10; $j++) {
+                    if (isset($model['path_' . $j])) {
+                        $model['url_' . $j] = vnbiz_s3_get_url_gen($model['path_' . $j]);
+                    }
                 }
             }
         })
@@ -306,13 +315,14 @@ trait vnbiz_trait_s3_file {
 		}
 		array_unshift($image_sizes, ['', '']);
 
-		$upload_file = function (&$context) use ($field_name, $sizes) {
+		$upload_file = function (&$context) use ($field_name, $sizes, $image_sizes) {
 			if (isset($context['model']) && isset($context['model'][$field_name])) {
 				if (is_string($context['model'][$field_name])) {
 					$max_file_size_mb = 50;
 					$url = $context['model'][$field_name];
 					$filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
-					if ($filemodel === null) {
+
+                    if ($filemodel === null) {
 						unset($context['model'][$field_name]);
 						return;
 					}
@@ -323,6 +333,12 @@ trait vnbiz_trait_s3_file {
 				$file_size = $context['model'][$field_name]['file_size'];
 				$file_path = $context['model'][$field_name]['file_path'];
 				$file_type = $context['model'][$field_name]['file_type'];
+
+                // assure $file_type is image;
+                $image_types = ['image/gif', 'image/bmp', 'image/jpeg', 'image/png', 'image/webp'];
+                if (!in_array($file_type, $image_types)) {
+                    throw new VnBizError("In field $field_name, Unsupported image type: " . $file_type, 's3_unsupported_image_type');
+                }
 
 				$context['temp_files'] = [];
 
@@ -353,8 +369,16 @@ trait vnbiz_trait_s3_file {
 					}
 				}
 
-				$result = vnbiz_model_create('s3', $s3_model);
-				$context['model'][$field_name] = $result['id'];
+				$s3 = vnbiz_model_create('s3', $s3_model);
+                
+				$context['model']['@' . $field_name] = &$s3;
+				if ($context['model']['@' . $field_name]) {
+					$sizes = $image_sizes;
+					$sizes[0] = [$s3['width'], $s3['height']];
+					$context['model']['@' . $field_name]['@image_sizes'] = $sizes;
+				}
+
+				$context['model'][$field_name] = $s3['id'];
 			}
 		};
 
@@ -375,18 +399,34 @@ trait vnbiz_trait_s3_file {
 		$this->db_after_commit_create($delete_files);
 		$this->db_after_commit_update($delete_files);
 
-		$this->db_after_get(function (&$context) use ($field_name, $image_sizes) {
-			if (isset($context['model'][$field_name])) {
-				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
-				$context['model']['@' . $field_name] = &$s3;
-				if ($context['model']['@' . $field_name]) {
-					$sizes = $image_sizes;
-					$sizes[0] = [$s3['width'], $s3['height']];
-					$context['model']['@' . $field_name]['@image_sizes'] = $sizes;
-				}
-			}
-		});
+        $this->db_after_find(function (&$context) use ($field_name, $image_sizes) {
+            if (!isset($context['models'])) {
+                return;
+            }
+            $models = &$context['models'];
+            $s3_model_ids = [];
+            foreach ($models as $model) {
+                if (isset($model[$field_name])) {
+                    $s3_model_ids[] = $model[$field_name];
+                }
+            }
+            $s3s = vnbiz_model_find('s3', ['id' => $s3_model_ids]);
+            $s3s_map = [];
+            foreach ($s3s as &$s3) {
+                $s3s_map[$s3['id']] = $s3;
+            }
+            foreach ($models as &$model) {
+                if (isset($model[$field_name]) && isset($s3s_map[$model[$field_name]])) {
+                    $model['@' . $field_name] = $s3s_map[$model['id']];
+                    if ($model['@' . $field_name]) {
+                        $sizes = $image_sizes;
+                        $sizes[0] = [$model['@' . $field_name]['width'], $model['@' . $field_name]['height']];
+                        $model['@' . $field_name]['@image_sizes'] = $sizes;
+                    }
+                }
+            }
 
+        });
 		return $this;
 	}
 
@@ -424,12 +464,29 @@ trait vnbiz_trait_s3_file {
 		$this->db_begin_create($upload_file);
 		$this->db_begin_update($upload_file);
 
-		$this->db_after_get(function (&$context) use ($field_name) {
-			if (isset($context['model'][$field_name])) {
-				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
-				$context['model']['@' . $field_name] = &$s3;
-			}
-		});
+        $this->db_after_find(function (&$context) use ($field_name) {
+            if (!isset($context['models'])) {
+                return;
+            }
+            $models = &$context['models'];
+            $s3_model_ids = [];
+            foreach ($models as $model) {
+                if (isset($model[$field_name])) {
+                    $s3_model_ids[] = $model[$field_name];
+                }
+            }
+            $s3s = vnbiz_model_find('s3', ['id' => $s3_model_ids]);
+            $s3s_map = [];
+            foreach ($s3s as &$s3) {
+                $s3s_map[$s3['id']] = $s3;
+            }
+            foreach ($models as &$model) {
+                if (isset($model[$field_name]) && isset($s3s_map[$model[$field_name]])) {
+                    $model['@' . $field_name] = $s3s_map[$model['id']];
+                }
+            }
+
+        });
 
 		return $this;
 	}

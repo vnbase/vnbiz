@@ -501,8 +501,6 @@ function vnbiz_array_to_xml($array, &$simpleXmlElement)
         }
     }
 }
-
-
 /**
  * return [file_name, file_size, file_path, file_type]
  */
@@ -514,6 +512,8 @@ function vnbiz_download_file_from_url($url, $max_size_mb)
     if (!is_numeric($max_size_mb) || $max_size_mb <= 0) {
         throw new VnBizError("Invalid max size");
     }
+
+    $max_size_bytes = $max_size_mb * 1024 * 1024;
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -528,12 +528,12 @@ function vnbiz_download_file_from_url($url, $max_size_mb)
     curl_close($ch);
 
     if ($information['http_code'] != 200) {
-        throw new VnBizError("Can't download file from url: $url", 'download_error');
+        throw new VnBizError("Can't download file from url: $url", 's3_download_error');
     }
 
-    $size = $information['download_content_length'];
-    if ($size > $max_size_mb * 1024 * 1024) {
-        throw new VnBizError("File size too large: $size", 'file_too_large');
+    $size = (int) $information['download_content_length'];
+    if ($size > $max_size_bytes) {
+        throw new VnBizError("File size too large: $size", 's3_file_too_large');
     }
 
     $ch = curl_init();
@@ -546,17 +546,49 @@ function vnbiz_download_file_from_url($url, $max_size_mb)
     $result = curl_exec($ch);
     $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     $header = substr($result, 0, $header_size);
-    $body = substr($result, $header_size);
-    $information = curl_getinfo($ch);
     curl_close($ch);
 
     preg_match('/filename="([^"]+)"/', $header, $matches);
     $file_name = $matches[1] ?? basename($url);
 
+    $file_path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $file_name;
+
+    // Open file handle
+    $fp = fopen($file_path, 'w');
+    if (!$fp) {
+        throw new VnBizError("Unable to open file for writing: $file_path", 'file_write_error');
+    }
+
+    // Initialize cURL session for downloading the file
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_FILE, $fp); // Write directly to file
+
+    // Set a callback function to limit the download size
+    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($resource, $download_size, $downloaded, $upload_size, $uploaded) use ($max_size_bytes) {
+        if ($downloaded > $max_size_bytes) {
+            return 1; // Return non-zero to abort the transfer
+        }
+        return 0;
+    });
+    curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+
+    curl_exec($ch);
+    if (curl_errno($ch)) {
+        fclose($fp);
+        unlink($file_path);
+        throw new VnBizError("Download aborted: file size exceeds limit", 's3_file_too_large');
+    }
+    curl_close($ch);
+    fclose($fp);
+
     return [
         'file_name' => $file_name,
-        'file_size' => $size,
-        'file_path' => $body,
+        'file_size' => filesize($file_path),
+        'file_path' => $file_path,
         'file_type' => $information['content_type']
     ];
 }
