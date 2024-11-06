@@ -1446,6 +1446,30 @@ class Model
 			}
 		});
 
+		// with web_before_create & web_before_update, validate if the ref is valid (user has permissions & ref model exists)
+		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				$ref_id = $context['model'][$field_name];
+
+				$find_context = [
+					'action' => "model_find", // when we support model count, we ultize.
+					'model_name' => $ref_model_name,
+					'filter' => [
+						'id' => $ref_id
+					]
+				];
+
+				vnbiz_do_action('web_model_find', $find_context);
+
+				if (sizeof($find_context['models']) == 0) {
+					throw new VnBizError("Invalid $field_name, model doesn't exist or missing permissions", 'invalid_model');
+				}
+			}
+		};
+
+		$this->web_before_create($assure_ref_id);
+		$this->web_before_update($assure_ref_id);
+
 		return $this;
 	}
 
@@ -1675,5 +1699,4 @@ class Model
 
 		return $this;
 	}
-
 }

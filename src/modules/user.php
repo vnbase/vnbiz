@@ -198,7 +198,7 @@ function vnbiz_init_module_user()
         $arr = vnbiz_token_verify($token, VNBIZ_TOKEN_SECRET);
         if ($arr && isset($arr['sub']) && isset($arr['typ']) && $arr['typ'] === 'access') {
         } else {
-            throw new VnBizError('Invalid bearer token 2', "invalid_token", null, null, 401);
+            throw new VnBizError('Invalid bearer token', "invalid_token", null, null, 401);
         }
 
         $user_id = vnbiz_decrypt_id($arr['sub']);
