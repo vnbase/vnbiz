@@ -94,7 +94,8 @@ function vnbiz_user_all_permissions($user_id)
     return [$permissions, $permissions_scope];
 }
 
-function vnbiz_user_issue_tokens(&$user, &$context) {
+function vnbiz_user_issue_tokens(&$user, &$context)
+{
 
     if ($user['status'] !== 'active') {
         throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
@@ -149,9 +150,8 @@ function vnbiz_init_module_user()
         ->string('username') //TODO: validate
         ->bool('email_verified', 'phone_verified')
         ->string('timezone')
-        ->string('fuid')
         ->string('language')
-        ->string('google_sub')
+        ->string('fuid', 'google_sub')
         ->password('password')
         ->text('bio', 'note')
         ->enum('status', ['active', 'inactive', 'deleted'], 'active')
@@ -170,6 +170,7 @@ function vnbiz_init_module_user()
             }
             return false;
         })
+        ->write_field_permission(['email', 'phone', 'fuid', 'google_sub', 'email_verified', 'phone_verified'], ['super', 'user_write'])
         ->web_before_update(function (&$context) {
             if (vnbiz_user_has_permissions('super', 'user_write')) {
                 return true;
