@@ -6,12 +6,21 @@ use League\OAuth2\Client\Provider\GoogleUser;
 
 function vnbiz_init_module_oauth()
 {
-    vnbiz_oauth_setup_google();
 
     vnbiz_add_action("web_before", function (&$context) {
         if (isset($context['action'])) {
             return;
         }
+
+        // if (isset($_GET['response_type']) && isset($_GET['client_id']) && isset($_GET['redirect_uri'])) {
+        //     if ($_GET['response_type'] === 'code') {
+        //         $context['action'] = "service_oauth_google_url";
+        //         $context['params'] = [
+        //             'redirect_url' => $_GET['redirect_uri']
+        //         ];
+        //         return;
+        //     }
+        // }
 
         if (isset($_POST['grant_type'])) {
             if ($_POST['grant_type'] === 'password') {
@@ -32,6 +41,10 @@ function vnbiz_init_module_oauth()
             }
         }
     });
+
+    vnbiz_add_action('vnbiz_before_start', function (&$context) {
+        vnbiz_oauth_setup_google();
+    });
 }
 
 function vnbiz_oauth_setup_google()
@@ -43,8 +56,8 @@ function vnbiz_oauth_setup_google()
         'clientId'     => OAUTH_GOOGLE_CLIENT_ID,
         'clientSecret' => OAUTH_GOOGLE_CLIENT_SECRET
     ]);
-
-    vnbiz_add_action("service_oauth_google_url", function (&$context) use ($provider) {
+    
+    vnbiz_add_action("service_oauth_google_url", function (&$context) use ($provider) { 
         if (!$context['params'] || !isset($context['params']['redirect_url'])) {
             $context['code'] = 'missing_params';
             $context['error'] = "Missing 'redirect_url'";
@@ -52,7 +65,6 @@ function vnbiz_oauth_setup_google()
         }
 
         $redirect_url = $context['params']['redirect_url'];
-
         $authUrl = $provider->getAuthorizationUrl(['redirect_uri' => $redirect_url]);
 
         $context['code'] = 'success';

@@ -192,6 +192,12 @@ function vnbiz_add_action($name, $func)
     return vnbiz()->actions()->add_action($name, $func);
 }
 
+function vnbiz_has_action($action_name)
+{
+    return vnbiz()->actions()->has_action($action_name);
+}
+
+
 function vnbiz_model_create($model_name, $model, $in_trans = false)
 {
     vnbiz_assure_model_name_exists($model_name);

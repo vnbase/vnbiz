@@ -124,6 +124,11 @@ class VnBiz
 					break;
 				default:
 					if (vnbiz_str_starts_with($action, 'service_')) {
+						
+						if (!vnbiz_has_action($action)) {
+							throw new VnBizError("No such service", "service_not_found");
+						}
+						
 						vnbiz_do_action($action, $context);
 
 						if (isset($context['models'])) {
@@ -140,6 +145,9 @@ class VnBiz
 							}
 						}
 						$result = $context;
+						if (!isset($result['code'])) {
+							throw new VnBizError("Service $action doesn't have code in response", 'system');
+						}
 						if ($result['code'] !== 'success') {
 							http_response_code(400);
 						}
