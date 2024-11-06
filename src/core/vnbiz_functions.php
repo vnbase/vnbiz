@@ -470,7 +470,10 @@ function vnbiz_web_user()
 function vnbiz_notification_create($model)
 {
     $GLOBALS['vnbiz_permission_skip'] = true;
-    $r = vnbiz_model_create('notification', $model, true
+    $r = vnbiz_model_create(
+        'notification',
+        $model,
+        true
         /** to skip create trans */
     );
     unset($GLOBALS['vnbiz_permission_skip']);
@@ -497,4 +500,63 @@ function vnbiz_array_to_xml($array, &$simpleXmlElement)
             }
         }
     }
+}
+
+
+/**
+ * return [file_name, file_size, file_path, file_type]
+ */
+function vnbiz_download_file_from_url($url, $max_size_mb)
+{
+    if (!is_string($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        throw new VnBizError("Invalid file url");
+    }
+    if (!is_numeric($max_size_mb) || $max_size_mb <= 0) {
+        throw new VnBizError("Invalid max size");
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+    curl_setopt($ch, CURLOPT_HEADER, 1);
+    curl_setopt($ch, CURLOPT_NOBODY, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $result = curl_exec($ch);
+    $information = curl_getinfo($ch);
+    curl_close($ch);
+
+    if ($information['http_code'] != 200) {
+        throw new VnBizError("Can't download file from url: $url", 'download_error');
+    }
+
+    $size = $information['download_content_length'];
+    if ($size > $max_size_mb * 1024 * 1024) {
+        throw new VnBizError("File size too large: $size", 'file_too_large');
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_HEADER, 1);
+    $result = curl_exec($ch);
+    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $header = substr($result, 0, $header_size);
+    $body = substr($result, $header_size);
+    $information = curl_getinfo($ch);
+    curl_close($ch);
+
+    preg_match('/filename="([^"]+)"/', $header, $matches);
+    $file_name = $matches[1] ?? basename($url);
+
+    return [
+        'file_name' => $file_name,
+        'file_size' => $size,
+        'file_path' => $body,
+        'file_type' => $information['content_type']
+    ];
 }

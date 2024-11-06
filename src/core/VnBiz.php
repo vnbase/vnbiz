@@ -229,6 +229,14 @@ class VnBiz
 		return $this;
 	}
 
+	public function init_oauth_google($client_id, $client_secret)
+	{
+		define('OAUTH_GOOGLE_CLIENT_ID', $client_id);
+		define('OAUTH_GOOGLE_CLIENT_SECRET', $client_secret);
+		return $this;
+
+	}
+
 	public function init_redis($host, $username = null, $password = null, $port = 6379)
 	{
 		define('REDIS_HOST', $host);

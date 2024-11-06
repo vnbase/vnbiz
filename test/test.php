@@ -9,6 +9,7 @@ vnbiz()
 	->init_app('test', 'THE_TK_SECRET')
 	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
 	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http')
+	->init_oauth_google('1065936865511-oi397kd912idmcn0p9ol3hg9bqv9nbqb.apps.googleusercontent.com', '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')
 	->init_redis('redis7')
 ;
 

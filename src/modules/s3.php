@@ -2,36 +2,42 @@
 
 use VnBiz\VnBizError;
 
-function vnbiz_unique_text() {
+function vnbiz_unique_text()
+{
     $bytes = random_bytes(16);
     return bin2hex($bytes);
 }
 
-class VnbizImage {
+class VnbizImage
+{
     private $image;
 
     private $func_save;
 
     private $width;
     private $height;
-    
-    function __construct($file_path){
+
+    function __construct($file_path)
+    {
         $this->image = $this->read_image_file($file_path);
         $this->width  = imagesx($this->image);
         $this->height = imagesy($this->image);
     }
 
-    public function  get_width() {
+    public function  get_width()
+    {
         return $this->width;
     }
-    
-    public function get_height() {
+
+    public function get_height()
+    {
         return $this->height;
     }
 
-    function read_image_file($path) {
+    function read_image_file($path)
+    {
         $type = mime_content_type($path);
-        switch($type) {
+        switch ($type) {
             case 'image/gif':
                 $image = imagecreatefromgif($path);
                 $this->func_save = 'imagegif';
@@ -58,10 +64,11 @@ class VnbizImage {
         return $image;
     }
 
-    function scale($file_name, $width, $height) {
+    function scale($file_name, $width, $height)
+    {
         $w = imagesx($this->image);
         $h = imagesy($this->image);
-        $r = $w/$h;
+        $r = $w / $h;
 
         $new_width = $r * $height;
         if ($new_width < $width) {
@@ -72,21 +79,22 @@ class VnbizImage {
         $w = imagesx($img);
         $h = imagesy($img);
 
-        $img = imagecrop($img, ['x' => ($w/2) - ($width/2), 'y' => ($h/2) - ($height/2), 'width' => $width, 'height' => $height]);
+        $img = imagecrop($img, ['x' => ($w / 2) - ($width / 2), 'y' => ($h / 2) - ($height / 2), 'width' => $width, 'height' => $height]);
         ($this->func_save)($img, $file_name);
     }
 }
 
-function vnbiz_s3_get_url_gen($path) {
+function vnbiz_s3_get_url_gen($path)
+{
     // $aws_region = "ap-southeast-1";
     // $s3_bucket = "this.is.for.testing";
     $aws_id = AWS_ACCESS_KEY_ID;
-    $aws_key= AWS_ACCESS_KEY_SECRET;
+    $aws_key = AWS_ACCESS_KEY_SECRET;
     $aws_region = AWS_REGION;
     $s3_bucket = AWS_S3_BUCKET;
     $s3_host = AWS_S3_HOST;
     $s3_scheme = AWS_S3_SCHEME;
-    
+
 
     $aws_service = 's3';
 
@@ -111,7 +119,7 @@ function vnbiz_s3_get_url_gen($path) {
         . "&X-Amz-Credential=" . $Credential
         . "&X-Amz-Date=" . $timestamp
         . "&X-Amz-Expires=" . $Expires
-        . "&X-Amz-SignedHeaders=host" ."\n"
+        . "&X-Amz-SignedHeaders=host" . "\n"
         . 'host:' . $host . "\n"
         . "\n"
         . 'host' . "\n"
@@ -129,21 +137,22 @@ function vnbiz_s3_get_url_gen($path) {
     $signature = hash_hmac('sha256', $StringToSign, $SigningKey);
 
     $url = "$s3_scheme://$host" . $path . '?X-Amz-Algorithm=AWS4-HMAC-SHA256'
-    . "&X-Amz-Credential=" . $Credential
-    . "&X-Amz-Date=" . $timestamp
-    . "&X-Amz-Expires=" . $Expires
-    . "&X-Amz-SignedHeaders=host"
-    . "&X-Amz-Signature=" . $signature;
+        . "&X-Amz-Credential=" . $Credential
+        . "&X-Amz-Date=" . $timestamp
+        . "&X-Amz-Expires=" . $Expires
+        . "&X-Amz-SignedHeaders=host"
+        . "&X-Amz-Signature=" . $signature;
 
     return $url;
 }
 
 
-function vnbiz_s3_upload($file_name, $file_path) {
+function vnbiz_s3_upload($file_name, $file_path)
+{
     // $aws_region = "ap-southeast-1";
     // $s3_bucket = "this.is.for.testing";
     $aws_id = AWS_ACCESS_KEY_ID;
-    $aws_key= AWS_ACCESS_KEY_SECRET;
+    $aws_key = AWS_ACCESS_KEY_SECRET;
     $aws_region = AWS_REGION;
     $s3_bucket = AWS_S3_BUCKET;
     $s3_host = AWS_S3_HOST;
@@ -197,11 +206,10 @@ function vnbiz_s3_upload($file_name, $file_path) {
     $authorization = "AWS4-HMAC-SHA256 "
         . "Credential=$aws_id/$date/$aws_region/$aws_service/aws4_request,"
         . "SignedHeaders=content-length;content-type;host;x-amz-content-sha256;x-amz-date,"
-        . "Signature=" . $signature
-        ;
+        . "Signature=" . $signature;
 
     $headers = [
-        'Authorization: '. $authorization,
+        'Authorization: ' . $authorization,
         'Content-Length: ' . $file_size,
         'Content-Type: ' . $file_type,
         'x-amz-content-sha256: ' . $file_hash,
@@ -211,7 +219,7 @@ function vnbiz_s3_upload($file_name, $file_path) {
         // 'Content-Disposition: attachment; filename="' . . '"'
     ];
 
-    
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "$s3_scheme://$host" . $path);
     curl_setopt($ch, CURLOPT_PUT, 1);
@@ -225,12 +233,12 @@ function vnbiz_s3_upload($file_name, $file_path) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     // curl_setopt($ch, CURLINFO_HEADER_OUT, true);
 
-    $result = curl_exec ($ch);
+    $result = curl_exec($ch);
     // $err = curl_error($ch);
 
     $information = curl_getinfo($ch);
     fclose($fh_res);
-    curl_close ($ch);
+    curl_close($ch);
 
     // var_dump($information);
 
@@ -240,7 +248,8 @@ function vnbiz_s3_upload($file_name, $file_path) {
     // var_dump($CanonicalRequest);
 }
 
-function vnbiz_init_module_s3() {
+function vnbiz_init_module_s3()
+{
     // vnbiz_add_action('db_before_create', function (&$context) {
     //     if ($context['model_name'] === 's3') {
     //     }
@@ -257,9 +266,9 @@ function vnbiz_init_module_s3() {
             $file_name = $context['model']['name'];
             // $file_type = $context['model']['type'];
             // $file_size = $context['model']['size'];
-            
+
             $uploaded = 0;
-            for($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 10; $i++) {
                 $file_name = $file_id . '_' . $i;
                 if (isset($model['path_' . $i])) {
                     $file_path = $model['path_' . $i];
@@ -275,12 +284,153 @@ function vnbiz_init_module_s3() {
         })
         ->db_after_get(function (&$context) {
             $model = &$context['model'];
-            for($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 10; $i++) {
                 if (isset($model['path_' . $i]) && $model['path_' . $i] != null) {
                     $model['url_' . $i] = vnbiz_s3_get_url_gen($model['path_' . $i]);
                 }
             }
-            
         })
-        ;
+    ;
+}
+
+trait vnbiz_trait_s3_file {
+
+	function s3_image($field_name, ...$sizes)
+	{
+		$this->schema->add_field($field_name, 'image');
+
+		$image_sizes = [];
+		for ($x = 0; $x < sizeof($sizes); $x++) {
+			$image_sizes[$x] = $sizes[$x];
+			sizeof($image_sizes[$x]) > 1 ?: $image_sizes[$x][1] = $image_sizes[$x][0];
+		}
+		array_unshift($image_sizes, ['', '']);
+
+		$upload_file = function (&$context) use ($field_name, $sizes) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				if (is_string($context['model'][$field_name])) {
+					$max_file_size_mb = 50;
+					$url = $context['model'][$field_name];
+					$filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
+					if ($filemodel === null) {
+						unset($context['model'][$field_name]);
+						return;
+					}
+					$context['model'][$field_name] = $filemodel;
+				}
+
+				$file_name = $context['model'][$field_name]['file_name'];
+				$file_size = $context['model'][$field_name]['file_size'];
+				$file_path = $context['model'][$field_name]['file_path'];
+				$file_type = $context['model'][$field_name]['file_type'];
+
+				$context['temp_files'] = [];
+
+				// $image = new \Gmagick($file_path);
+				$image = new \VnbizImage($file_path);
+
+				$s3_model = [
+					'name' => $file_name,
+					'size' => $file_size,
+					'type' => $file_type,
+					'path_0' => $file_path,
+					'is_image' => true,
+					'width' => $image->get_width(),
+					'height' => $image->get_Height(),
+				];
+
+				for ($i = 1; $i < 10; $i++) {
+					if ($i - 1 < sizeof($sizes)) {
+						$size = $sizes[$i - 1];
+						sizeof($size) > 1 ?: $size[1] = $size[0];
+
+						$new_file = $file_path . '_' . $i;
+
+						$image->scale($new_file, $size[0], $size[1]);
+						//TODO; resizeimage
+						$s3_model['path_' . $i] = $new_file;
+						$context['temp_files'][] = $new_file;
+					}
+				}
+
+				$result = vnbiz_model_create('s3', $s3_model);
+				$context['model'][$field_name] = $result['id'];
+			}
+		};
+
+		$this->db_begin_create($upload_file);
+		$this->db_begin_update($upload_file);
+
+		$delete_files = function (&$context) {
+			if (isset($context['temp_files'])) {
+				foreach ($context['temp_files'] as $path) {
+					try {
+						unlink($path);
+					} catch (\Exception $e) {
+					}
+				}
+			}
+		};
+
+		$this->db_after_commit_create($delete_files);
+		$this->db_after_commit_update($delete_files);
+
+		$this->db_after_get(function (&$context) use ($field_name, $image_sizes) {
+			if (isset($context['model'][$field_name])) {
+				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
+				$context['model']['@' . $field_name] = &$s3;
+				if ($context['model']['@' . $field_name]) {
+					$sizes = $image_sizes;
+					$sizes[0] = [$s3['width'], $s3['height']];
+					$context['model']['@' . $field_name]['@image_sizes'] = $sizes;
+				}
+			}
+		});
+
+		return $this;
+	}
+
+	public function s3_file($field_name)
+	{
+		$this->schema->add_field($field_name, 'file');
+
+		$upload_file = function (&$context) use ($field_name) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				if (is_string($context['model'][$field_name])) {
+					$max_file_size_mb = 50;
+					$url = $context['model'][$field_name];
+					$filemodel = vnbiz_download_file_from_url($url, $max_file_size_mb);
+					if ($filemodel === null) {
+						unset($context['model'][$field_name]);
+						return;
+					}
+					$context['model'][$field_name] = $filemodel;
+				}
+				
+				$file_name = $context['model'][$field_name]['file_name'];
+				$file_size = $context['model'][$field_name]['file_size'];
+				$file_path = $context['model'][$field_name]['file_path'];
+				$file_type = $context['model'][$field_name]['file_type'];
+				$result = vnbiz_model_create('s3', [
+					'name' => $file_name,
+					'size' => $file_size,
+					'type' => $file_type,
+					'path_0' => $file_path
+				]);
+				$context['model'][$field_name] = $result['id'];
+			}
+		};
+
+		$this->db_begin_create($upload_file);
+		$this->db_begin_update($upload_file);
+
+		$this->db_after_get(function (&$context) use ($field_name) {
+			if (isset($context['model'][$field_name])) {
+				$s3 = vnbiz_model_find_one('s3', ['id' => $context['model'][$field_name]]);
+				$context['model']['@' . $field_name] = &$s3;
+			}
+		});
+
+		return $this;
+	}
 }

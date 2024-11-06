@@ -2,20 +2,17 @@
 
 use VnBiz\VnBizError;
 use League\OAuth2\Client\Provider\Google;
+use League\OAuth2\Client\Provider\GoogleUser;
 
-function vnbiz_init_module_oauth() {
-    $provider = new Google([
-        'clientId'     => '1065936865511-oi397kd912idmcn0p9ol3hg9bqv9nbqb.apps.googleusercontent.com',
-        'clientSecret' => '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',
-        'redirectUri'  => 'https://example.com/callback-url',
-        // 'hostedDomain' => 'example.com', // optional; used to restrict access to users on your G Suite/Google Apps for Business accounts
-    ]);
+function vnbiz_init_module_oauth()
+{
+    vnbiz_oauth_setup_google();
 
     vnbiz_add_action("web_before", function (&$context) {
         if (isset($context['action'])) {
             return;
         }
-        
+
         if (isset($_POST['grant_type'])) {
             if ($_POST['grant_type'] === 'password') {
                 if (isset($_POST['username']) && isset($_POST['password'])) {
@@ -32,12 +29,23 @@ function vnbiz_init_module_oauth() {
                         'refresh_token' => $_POST['refresh_token']
                     ];
                 }
-            } 
+            }
         }
     });
+}
+
+function vnbiz_oauth_setup_google()
+{
+    if (!defined('OAUTH_GOOGLE_CLIENT_ID') || !defined('OAUTH_GOOGLE_CLIENT_SECRET')) {
+        return;
+    }
+    $provider = new Google([
+        'clientId'     => OAUTH_GOOGLE_CLIENT_ID,
+        'clientSecret' => OAUTH_GOOGLE_CLIENT_SECRET
+    ]);
 
     vnbiz_add_action("service_oauth_google_url", function (&$context) use ($provider) {
-        if (!$context['params'] || !isset($context['params']['redirect_url']) ) {
+        if (!$context['params'] || !isset($context['params']['redirect_url'])) {
             $context['code'] = 'missing_params';
             $context['error'] = "Missing 'redirect_url'";
             return;
@@ -53,7 +61,7 @@ function vnbiz_init_module_oauth() {
     });
 
     vnbiz_add_action("service_oauth_google_login", function (&$context) use ($provider) {
-        if (!$context['params'] || !isset($context['params']['code']) || !isset($context['params']['redirect_url']) ) {
+        if (!$context['params'] || !isset($context['params']['code']) || !isset($context['params']['redirect_url'])) {
             $context['code'] = 'missing_params';
             $context['error'] = "Missing 'code' or 'redirect_url'";
             return;
@@ -67,46 +75,56 @@ function vnbiz_init_module_oauth() {
         ]);
 
         try {
+
+            /**
+             * @var GoogleUser $ownerDetails
+             */
             $ownerDetails = $provider->getResourceOwner($token);
+            $googleUser = $ownerDetails->toArray();
             $context['code'] = 'success';
             $context['error'] = null;
-            $context['models'] = [$ownerDetails->toArray()];
+            $context['models'] = [$googleUser];
 
-            if (!$ownerDetails->getEmail()) {
-                throw new Error("Missing email!");
+            if (!isset($googleUser['email'])) {
+                throw new VnBizError("Missing email!");
             }
 
             $user = vnbiz_model_find_one('user', [
-                'email' => $ownerDetails->getEmail()
+                'email' => $googleUser['email']
             ]);
 
             if ($user) {
                 if (isset($user['google_sub'])) {
-                    if ($user['google_sub'] != $ownerDetails->getId()) {
-                        throw new Error("Same user email but diffrent google_sub!");
+                    if ($user['google_sub'] != $googleUser['sub']) {
+                        throw new VnBizError("Same user email but diffrent google_sub!");
                     }
+                } else {
+                    vnbiz_model_update('user', ['id' => $user['id']], ['google_sub' => $googleUser['sub']]);
                 }
-
-                vnbiz_model_update('user', ['id' => $user['id']], ['google_sub' => $ownerDetails->getId()]);
             } else {
+                $avatar = null;
+                if (isset($google['picture'])) {
+                    $avatar = $google['picture'];
+                } else {
+                    $avatar = null;
+                }
                 $user = vnbiz_model_create('user', [
-                    'email' => $ownerDetails->getEmail(),
-                    'google_sub' => $ownerDetails->getId(),
+                    'email' => $googleUser['email'],
+                    'google_sub' => $googleUser['sub'],
                     'language' => $ownerDetails->getLocale(),
                     'first_name' => $ownerDetails->getFirstName(),
                     'last_name' => $ownerDetails->getLastName(),
                     'alias' => $ownerDetails->getName(),
-                    // 'avatar' => $ownerDetails->getAvatar()
+                    'email_verified' => vnbiz_get_key($googleUser, 'email_verified', false),
+                    'avatar' => $avatar
                 ]);
             }
             $context['models'] = [$user];
             $context['access_token'] = vnbiz_token_sign(['user_id' => $user['id']], VNBIZ_TOKEN_SECRET);
-
-        } catch (Exception $e) { 
+        } catch (Exception $e) {
             throw $e;
         }
     });
-
 }
 /**
  * 
