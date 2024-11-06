@@ -15,6 +15,7 @@ include __DIR__ . '/base/hashids/src/HashidsException.php';
 include __DIR__ . '/base/hashids/src/Hashids.php';
 
 include __DIR__ . '/core/vnbiz_functions.php';
+include __DIR__ . '/core/VnbizImage.php';
 
 include __DIR__ . '/modules/systemconfig.php';
 include __DIR__ . '/modules/user.php';

@@ -619,3 +619,9 @@ function vnbiz_generate_thumbnail($source_file_path, $thumbnail_path, $width, $h
         return false;
     }
 }
+
+function vnbiz_unique_text()
+{
+    $bytes = random_bytes(16);
+    return bin2hex($bytes);
+}
