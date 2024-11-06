@@ -94,6 +94,38 @@ function vnbiz_user_all_permissions($user_id)
     return [$permissions, $permissions_scope];
 }
 
+function vnbiz_user_issue_tokens(&$user, &$context) {
+
+    if ($user['status'] !== 'active') {
+        throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
+    }
+
+    [$permissions, $permission_scope] = vnbiz_user_all_permissions($user['id']);
+
+    $GLOBALS['vnbiz_user'] = $user;
+
+    $context['code'] = 'success';
+    $context['error'] = null;
+    $context['models'] = [$user];
+
+    $expire_in = 900; //15 minutes
+    $context['refresh_token'] = vnbiz_token_sign([
+        'typ' => 'refresh',
+        'sub' => vnbiz_encrypt_id($user['id']),
+        'pas' => vnbiz_user_get_public_hashed_password($user)
+    ], VNBIZ_TOKEN_SECRET);
+
+    $context['access_token'] = vnbiz_token_sign([
+        'typ' => 'access',
+        'sub' => vnbiz_encrypt_id($user['id']),
+        'per' => $permissions,
+        'per_s' => $permission_scope
+    ], VNBIZ_TOKEN_SECRET, time() + $expire_in);
+
+    $context['token_type'] = 'Bearer';
+    $context['expires_in'] = $expire_in;
+}
+
 //TODO: Add refresh token service
 //TODO: Limit request per second
 //TODO: capchar features
@@ -272,35 +304,7 @@ function vnbiz_init_module_user()
             return;
         }
 
-
-        if ($user['status'] !== 'active') {
-            throw new VnBizError("User status is: " . $user['status'], 'user_status', null, null, 403);
-        }
-
-        [$permissions, $permission_scope] = vnbiz_user_all_permissions($user['id']);
-
-        $GLOBALS['vnbiz_user'] = $user;
-
-        $context['code'] = 'success';
-        $context['error'] = null;
-        $context['models'] = [$user];
-
-        $expire_in = 900; //15 minutes
-        $context['refresh_token'] = vnbiz_token_sign([
-            'typ' => 'refresh',
-            'sub' => vnbiz_encrypt_id($user['id']),
-            'pas' => vnbiz_user_get_public_hashed_password($user)
-        ], VNBIZ_TOKEN_SECRET);
-
-        $context['access_token'] = vnbiz_token_sign([
-            'typ' => 'access',
-            'sub' => vnbiz_encrypt_id($user['id']),
-            'per' => $permissions,
-            'per_s' => $permission_scope
-        ], VNBIZ_TOKEN_SECRET, time() + $expire_in);
-
-        $context['token_type'] = 'Bearer';
-        $context['expires_in'] = $expire_in;
+        vnbiz_user_issue_tokens($user, $context);
     });
 
     vnbiz_add_action("service_user_me", function (&$context) {
