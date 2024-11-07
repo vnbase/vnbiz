@@ -21,7 +21,9 @@ services:
       retries: 30
 
   mysql8:
-    image: mariadb:10.11.9-jammy
+    # image: mariadb:10.11.9-jammy
+    # image: mysql:9.1.0
+    image: mysql:8.4.2
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
