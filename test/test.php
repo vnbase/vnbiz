@@ -20,8 +20,21 @@ include_once(__DIR__ . "/../example/types.php");
 vnbiz_model_add('testmodelb')
 	->no_update()
 	->no_delete()
+	->ref('user_id', 'user')
+	->ref('project_id', 'project')
 	->back_ref_count('testmodela_count', 'testmodela', 'testmodelb_id')
 	->string("name");
+
+vnbiz_model_add('testhas')
+	->has_v()
+	->has_history()
+	->has_trash()
+	->has_reviews()
+	->has_tags()
+	->has_comments()
+	->has_usermarks('like')
+	->author()
+;
 
 vnbiz_model_add('testmodela')
 	->ui([
@@ -31,18 +44,8 @@ vnbiz_model_add('testmodela')
 		'subtitle' => 'email'
 	])
 	->default([
-		'string_1' => 'string_1_value'
+		'string_1' => 'string_1_default'
 	])
-	->has_v()
-	->author()
-	->ref('user_id', 'user')
-	->ref('project_id', 'project')
-	->has_history()
-	->has_trash()
-	->has_reviews()
-	->has_tags()
-	->has_comments()
-	->has_usermarks('like')
 	->model_id('model_id_1', 'model_id_2')
 	->string('string_1', 'string_2')
 	->bool('bool_1', 'bool_2')

@@ -38,6 +38,7 @@ include __DIR__ . '/modules/useractivity.php';
 include __DIR__ . '/modules/datascope.php';
 
 include __DIR__ . '/core/Schema.php';
+include __DIR__ . '/core/Model_event.php';
 include __DIR__ . '/core/Model_permission.php';
 include __DIR__ . '/core/Model.php';
 include __DIR__ . '/core/VnBiz.php';

@@ -91,6 +91,9 @@ function vnbiz_encrypt_ids($ids)
         }
         return $arr;
     }
+    if (is_string($ids)) {
+        return vnbiz_encrypt_id($ids);
+    }
     return $ids;
 }
 
@@ -116,6 +119,9 @@ function vnbiz_decrypt_ids($ids)
             $arr[] = vnbiz_decrypt_id($id);
         }
         return $arr;
+    }
+    if (is_string($ids)) {
+        return vnbiz_decrypt_id($ids);
     }
     return $ids;
 }

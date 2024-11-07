@@ -98,3 +98,23 @@ vnbiz_model_add('project')
 vnbiz()->start();
 
 ```
+
+web_before_XXX	
+	web_XXX
+					db_before_xxx
+								START_TRANSACTION
+
+										db_begin_XXX
+										
+										db_before_commit_XXX
+															COMMIT()
+										db_after_commit_XXX
+
+								[ROLLBACK]
+										[db_rollback_XXX]
+										
+										db_end_XXX
+								END_TRNSACTION
+					db_after_XXX
+
+web_after_XXX

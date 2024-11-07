@@ -6,6 +6,7 @@ use R;
 
 class Model
 {
+	use \Model_event;
 	use \vnbiz_trait_datascope;
 	use \vnbiz_trait_s3_file;
 	use \Model_permission;
@@ -173,6 +174,10 @@ class Model
 		$this->default(['v' => 1]);
 		$this->web_readonly('v');
 
+		$this->db_before_create(function (&$context) {
+			$context['model']['v'] = 1;
+		});
+
 		$this->db_before_update(function (&$context) {
 			if (isset($context['filter']) && isset($context['filter']['v'])) {
 				if ($context['old_model']['v'] != $context['filter']['v']) {
@@ -209,7 +214,6 @@ class Model
 
 			$this->web_secure_id($field_name);
 		}
-
 
 		return $this;
 	}
@@ -448,234 +452,6 @@ class Model
 
 		vnbiz_add_action("db_before_find_exe_$model_name", $before_db_before_exec);
 		vnbiz_add_action("db_before_count_exe_$model_name", $before_db_before_exec);
-
-		return $this;
-	}
-
-	public function web_before_create($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_before_model_create_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_before_update($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_before_model_update_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_before_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_before_model_delete_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_before_find($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_before_model_find_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_after_create($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_after_model_create_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_after_update($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_after_model_update_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_after_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_after_model_delete_$model_name", $func);
-
-		return $this;
-	}
-
-	public function web_after_find($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("web_after_model_find_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_begin_create($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("db_before_create", function (&$context) use ($func, $model_name) {
-			if (isset($context['model_name']) && $context['model_name'] == $model_name) {
-				$func($context);
-			}
-		});
-
-		return $this;
-	}
-
-	public function db_begin_update($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("db_before_update", function (&$context) use ($func, $model_name) {
-			if (isset($context['model_name']) && $context['model_name'] == $model_name) {
-				$func($context);
-			}
-		});
-
-		return $this;
-	}
-
-	public function db_begin_find($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("db_before_find", function (&$context) use ($func, $model_name) {
-			if (isset($context['model_name']) && $context['model_name'] == $model_name) {
-				$func($context);
-			}
-		});
-
-		return $this;
-	}
-
-	public function db_begin_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("db_before_delete", function (&$context) use ($func, $model_name) {
-			if (isset($context['model_name']) && $context['model_name'] == $model_name) {
-				$func($context);
-			}
-		});
-
-		return $this;
-	}
-
-	public function db_before_create($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		vnbiz_add_action("db_before_create_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_create($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_create_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_commit_create($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_commit_create_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_get($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_get_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_before_find($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_before_find_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_find($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_find_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_before_update($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_before_update_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_update($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_update_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_commit_update($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_commit_update_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_before_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_before_delete_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("db_after_delete_$model_name", $func);
-
-		return $this;
-	}
-
-	public function db_after_commit_delete($func)
-	{
-		$model_name = $this->schema->model_name;
-
-		return $this;
-	}
-
-	public function on_new_ref($func)
-	{
-		$model_name = $this->schema->model_name;
-		vnbiz_add_action("model_new_ref_$model_name", $func);
 
 		return $this;
 	}

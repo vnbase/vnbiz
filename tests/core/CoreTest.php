@@ -12,8 +12,12 @@ final class CoreTest extends TestCase
     {
         $client = new Client();
 
-        [$status, $body] = $client->model_create('testmodelb', [
-            'name' => 'a'
+        [$status, $body] = $client->model_create('testmodela', [
+            // 'model_id_1' => 'string_1',
+            // 'model_id_2' => 'model_id_2',
+            'string_1' => 'string_1',
+            'string_2' => 'string_2',
+            // 'created_by' => 'INVALID_VALUE',
         ]);
         $this->assertEquals(200, $status, 'create returns 200');
         $this->assertEquals('success', $body['code'], 'create returns success');
@@ -21,10 +25,7 @@ final class CoreTest extends TestCase
         $model = isset($body['model']) ? $body['model'] : null;
         $this->assertNotNull($model, 'has response model');
 
-        $this->assertArrayHasKey('id', $model, 'model has id');
-
-        $this->assertArrayHasKey('created_at', $model, 'model has created_at');
-        $this->assertIsNumeric($model['created_at'], 'created_at is number');
-
+        $this->assertIsString($model['id'], 'model has id');
+        $this->assertIsNumeric($model['created_at'], 'created_at is set');
     }
 }
