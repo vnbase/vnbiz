@@ -2,6 +2,7 @@ sudo docker compose -f compose.test.yaml up --build --wait
 
 max_retry=5
 counter=0
+echo "curl --fail-with-body http://localhost:8080/test/sql.php"
 until curl --fail-with-body http://localhost:8080/test/sql.php
 do
    sleep 3
