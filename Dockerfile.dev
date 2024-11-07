@@ -1,103 +1,18 @@
+FROM docker.realnam.com/vnbiz-base:latest
 
-FROM php:8.3.12-apache as final
+# USER www-data
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-
-# Your PHP application may require additional PHP extensions to be installed
-# manually. For detailed instructions for installing extensions can be found, see
-# https://github.com/docker-library/docs/tree/master/php#how-to-install-more-php-extensions
-# The following code blocks provide examples that you can edit and use.
-#
-# Add core PHP extensions, see
-# https://github.com/docker-library/docs/tree/master/php#php-core-extensions
-# This example adds the apt packages for the 'gd' extension's dependencies and then
-# installs the 'gd' extension. For additional tips on running apt-get, see
-# https://docs.docker.com/go/dockerfile-aptget-best-practices/
-RUN apt-get update && apt-get install -y \
-libmagickwand-dev libmagickcore-dev \
-libzip-dev
-    # zlib1g-dev \
-    # libfreetype-dev \
-    # libjpeg62-turbo-dev libpng-dev \
-# RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-#     && docker-php-ext-install -j$(nproc) gd
-
-
-
-# RUN apt-get update 
-# bcmath bz2 calendar ctype curl dba dl_test dom enchant exif ffi fileinfo filter ftp gd 
-# gettext gmp hash iconv imap intl json ldap mbstring mysqli oci8 odbc opcache pcntl pdo 
-# pdo_dblib pdo_firebird pdo_mysql pdo_oci pdo_odbc pdo_pgsql pdo_sqlite pgsql phar posix pspell 
-# random readline reflection session shmop simplexml snmp soap sockets sodium spl standard sysvmsg 
-# sysvsem sysvshm tidy tokenizer xml xmlreader xmlwriter xsl zend_test zip
-
-RUN apt-get install -y libonig-dev libcurl4 libcurl4-openssl-dev
-RUN docker-php-ext-install bcmath mbstring zip
-RUN docker-php-ext-install pdo pdo_mysql curl
-# RUN docker-php-ext-install opcache
-
-RUN pecl install redis-5.3.7 imagick-3.7.0
-RUN docker-php-ext-enable imagick;
-
-RUN rm -rf /var/lib/apt/lists/* 
-
-RUN echo " \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"LABEL\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"EPHEMERAL\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"URL\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"HTTPS\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"HTTP\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"FTP\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"MVG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"M2V\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"MPEG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"MPG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"WEBP\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"WMV\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"AVI\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"MKV\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"MP4\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"PSD\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"TIFF\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"PNG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"JPEG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"JPG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"GIF\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"BMP\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"ICO\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"SVG\" /> \
-<policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> \
-" >> /etc/ImageMagick-6/policy.xml
-
-
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
-
-RUN echo "upload_max_filesize = 50M\npost_max_size = 50M" > /usr/local/etc/php/conf.d/uploads.ini
-    #
-# Add PECL extensions, see
-# https://github.com/docker-library/docs/tree/master/php#pecl-extensions
-# This example adds the 'redis' and 'xdebug' extensions.
-
-RUN echo "\nextension=redis.so \n" >> "$PHP_INI_DIR/php.ini" 
-
-# RUN pecl install redis-5.3.7 \
-#    && pecl install xdebug-3.2.1 \
-#    && docker-php-ext-enable redis xdebug
-# Use the default production configuration for PHP runtime arguments, see
-# https://github.com/docker-library/docs/tree/master/php#configuration
-#RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
-
-# Copy the app dependencies from the previous install stage.
 COPY composer.json .
 COPY composer.lock .
 RUN composer install
-COPY . .
-# Copy the app files from the app directory.
-# COPY ./src /var/www/html/src
 
-# Switch to a non-privileged user (defined in the base image) that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
-USER www-data
+COPY . .
+
+COPY config/nginx.conf /etc/nginx/http.d/default.conf
+COPY config/supervisord.conf /etc/supervisord.conf
+COPY config/logging.conf /usr/local/etc/php-fpm.d/logging.conf
+COPY config/php.ini-development /usr/local/etc/php/php.ini
+# COPY config/php.ini-production /usr/local/etc/php/php.ini
+
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

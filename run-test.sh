@@ -1,4 +1,4 @@
-rm -rf ./data.mysql.test
+sudo rm -rf ./data.mysql.test
 sudo docker compose -f compose.test.yaml up --build --wait
 
 max_retry=5
@@ -29,7 +29,7 @@ if [ $TEST_RESULT -eq 0 ]; then
 else
   echo "Tests failed."
 fi
-rm -rf ./data.mysql.test
+sudo rm -rf ./data.mysql.test
 
 echo $TEST_RESULT;
 
