@@ -36,31 +36,6 @@ function vnbiz_getBearerToken()
     return null;
 }
 
-function vnbiz_user_add_default()
-{
-    $usercount = vnbiz_model_count('user');
-    if ($usercount > 0) {
-        return;
-    }
-    $user = vnbiz_model_create('user', [
-        'email' => 'superadmin@vnbiz.com',
-        'username' => 'superadmin',
-        'password' => 'superadmin'
-    ]);
-    $usergroup = vnbiz_model_create('usergroup', [
-        'name' => 'Super Admin Group',
-        'description' => 'You know, for Supert Admin user',
-        'permissions' => 'super',
-        'permission_scope' => [
-            '.' => true
-        ]
-    ]);
-    vnbiz_model_create('useringroup', [
-        'user_id' => $user['id'],
-        'usergroup_id' => $usergroup['id']
-    ]);
-    return $user;
-}
 
 function vnbiz_user_get_public_hashed_password($user)
 {
@@ -331,5 +306,32 @@ function vnbiz_init_module_user()
 
     vnbiz_add_action("service_user_logout", function (&$context) {
         $context['code'] = 'success';
+    });
+
+    vnbiz_add_action('service_db_init_default', function (&$context) {
+        $usercount = vnbiz_model_count('user');
+        $context['code'] = 'success';
+        $context['models'] = [];
+        if ($usercount > 0) {
+            return;
+        }
+        $user = vnbiz_model_create('user', [
+            'email' => 'superadmin@vnbiz.com',
+            'username' => 'superadmin',
+            'password' => 'superadmin'
+        ]);
+        $usergroup = vnbiz_model_create('usergroup', [
+            'name' => 'Super Admin Group',
+            'description' => 'You know, for Supert Admin user',
+            'permissions' => 'super',
+            'permission_scope' => [
+                '.' => true
+            ]
+        ]);
+        vnbiz_model_create('useringroup', [
+            'user_id' => $user['id'],
+            'usergroup_id' => $usergroup['id']
+        ]);
+        $context['models'] = [$user];
     });
 }

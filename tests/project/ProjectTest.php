@@ -10,6 +10,7 @@ final class ProjectTest extends TestCase
 {
     public static function setUpBeforeClass(): void {
         $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
         [$status, $body] = $client->model_create('user', [
             'email' => 'project_user@vnbiz.com',
             'password' => '12345678'

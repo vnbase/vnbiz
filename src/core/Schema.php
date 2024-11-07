@@ -38,7 +38,7 @@ class Schema
 		return $this->model_name;
 	}
 
-	public function add_field($field_name, $type)
+	public function add_field($field_name, $type, $default_value = null)
 	{
 		if (isset($this->schema[$field_name])) {
 			throw new Error("field $field_name already existed");
@@ -54,6 +54,10 @@ class Schema
 		$this->schema[$field_name] = [
 			'type' => $type
 		];
+		if ($default_value !== null) {
+			$this->schema[$field_name]['default'] = $default_value;
+
+		}
 	}
 
 	public function set_field($field_name, $desc): void

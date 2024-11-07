@@ -45,6 +45,7 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 		case 'ref':
 		case 'file':
 		case 'image':
+		case 'namespace':
 			$sql_type = 'INT UNSIGNED';
 			break;
 		case 'bool':
@@ -181,10 +182,10 @@ function vnbiz_sql_alter_tables_echo()
 
 	$sql = $c['sql'];
 
-	foreach(preg_split("/((\r?\n)|(\r\n?))/", $sql) as $line){
+	foreach (preg_split("/((\r?\n)|(\r\n?))/", $sql) as $line) {
 		if (trim($line) !== '') {
 			echo $line;
-			
+
 			try {
 				R::exec($line);
 			} catch (\Throwable $e) {
@@ -193,7 +194,7 @@ function vnbiz_sql_alter_tables_echo()
 			}
 		}
 		// do stuff with $line
-	} 
+	}
 
 	return $sql;
 }

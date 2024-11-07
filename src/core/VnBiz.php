@@ -43,6 +43,21 @@ class VnBiz
 		return $this;
 	}
 
+	/**
+	 * $namespace == null: all namespaces are allowed
+	 */
+	public function use_namespaces($namespaces = null)
+	{
+		if ($namespaces) {
+			$GLOBALS['VNBIZ_NAMESPACES'] = [];
+			foreach ($namespaces as $namespace) {
+				$GLOBALS['VNBIZ_NAMESPACES'][$namespace] = true;
+			}
+			return;
+		}
+		$GLOBALS['VNBIZ_NAMESPACES'] = true;
+	}
+
 
 	public function restful()
 	{
@@ -124,11 +139,10 @@ class VnBiz
 					break;
 				default:
 					if (vnbiz_str_starts_with($action, 'service_')) {
-						
 						if (!vnbiz_has_action($action)) {
 							throw new VnBizError("No such service", "service_not_found");
 						}
-						
+
 						vnbiz_do_action($action, $context);
 
 						if (isset($context['models'])) {
@@ -242,7 +256,6 @@ class VnBiz
 		define('OAUTH_GOOGLE_CLIENT_ID', $client_id);
 		define('OAUTH_GOOGLE_CLIENT_SECRET', $client_secret);
 		return $this;
-
 	}
 
 	public function init_redis($host, $username = null, $password = null, $port = 6379)

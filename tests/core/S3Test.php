@@ -8,6 +8,11 @@ use PHPUnit\Framework\TestCase;
 
 final class S3Test extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
+    }
     public function test_s3_upload_image_from_url()
     {
         $client = new Client();
@@ -31,7 +36,7 @@ final class S3Test extends TestCase
 
         $this->assertArrayHasKey('@image_1', $model, 'model has image_1');
         $this->assertIsArray($model['@image_1'], 'image_1 is array');
-        
+
         $this->assertArrayHasKey('path_thumbnail', $model['@image_1'], 'image_1 has path_thumbnail');
         $this->assertArrayHasKey('url_thumbnail', $model['@image_1'], 'image_1 has url_thumbnail');
 

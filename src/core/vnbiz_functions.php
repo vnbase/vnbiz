@@ -637,3 +637,33 @@ function vnbiz_unique_text()
     $bytes = random_bytes(16);
     return bin2hex($bytes);
 }
+
+function vnbiz_namespace_id()
+{
+    if (isset($GLOBALS['vnbiz_namespace_id'])) {
+        return $GLOBALS['vnbiz_namespace_id'];
+    }
+    if (isset($_SERVER['HTTP_X_NAMESPACE'])) {
+        $ns_id = vnbiz_decrypt_id($_SERVER['HTTP_X_NAMESPACE']);
+        if ($ns_id) {
+            $GLOBALS['vnbiz_namespace_id'] = $ns_id;
+            return $ns_id;
+        }
+    }
+    if (isset($_GET['ns'])) {
+        $ns_id = vnbiz_decrypt_id($_GET['ns']);
+        if ($ns_id) {
+            $GLOBALS['vnbiz_namespace_id'] = $ns_id;
+            return $ns_id;
+        }
+    }
+    if (isset($_POST['ns'])) {
+        $ns_id = vnbiz_decrypt_id($_POST['ns']);
+        if ($ns_id) {
+            $GLOBALS['vnbiz_namespace_id'] = $ns_id;
+            return $ns_id;
+        }
+    }
+    throw new Error("Namespace is missing");
+    return 0;
+}

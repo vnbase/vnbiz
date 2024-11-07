@@ -47,27 +47,6 @@ include __DIR__ . '/core/VnBiz.php';
 
 date_default_timezone_set("UTC");
 
-vnbiz()
-	->init_modules(
-		'systemconfig',
-		'user',
-		'usermark',
-		'comment',
-		'tag',
-		'review',
-		'history',
-		's3',
-		'template',
-		'email',
-		'oauth',
-		'notification',
-		'redis',
-		'monitor',
-		'useractivity',
-		'datascope'
-	);
-
-
 
 vnbiz_add_action('service_health_check', function (&$context) { 
 	$mysql_connected = R::testConnection();

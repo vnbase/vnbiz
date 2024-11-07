@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 
 final class CoreTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+    }
     public function test_model_create()
     {
         $client = new Client();

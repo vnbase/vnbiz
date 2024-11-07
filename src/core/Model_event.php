@@ -232,4 +232,12 @@ trait Model_event
 
         return $this;
     }
+
+    public function db_before_count($func)
+    {
+        $model_name = $this->schema->model_name;
+        vnbiz_add_action("db_before_count_$model_name", $func);
+
+        return $this;
+    }
 }

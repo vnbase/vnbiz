@@ -17,10 +17,38 @@ class Model
 	{
 		$this->schema = new Schema($model_name);
 
+		if (isset($GLOBALS['VNBIZ_NAMESPACES'])) {
+			if ($model_name !== 'namespace') {
+				$this->has_ns();
+			}
+		}
 		// $this->crop();
 		// $this->has_trash();
 		$this->time_at();
 		$this->id();
+	}
+
+	private function has_ns()
+	{
+		$this->schema->add_field('ns', 'namespace', 0);
+		$this->web_secure_id('ns');
+
+		$this->db_before_create(function (&$context) {
+			$context['model']['ns'] = vnbiz_namespace_id();
+		});
+		$this->db_before_update(function (&$context) {
+			$context['filter']['ns'] = vnbiz_namespace_id();
+		});
+		$this->db_before_find(function (&$context) {
+			$context['filter']['ns'] = vnbiz_namespace_id();
+		});
+		$this->db_before_count(function (&$context) {
+			$context['filter']['ns'] = vnbiz_namespace_id();
+		});
+		$this->db_before_delete(function (&$context) {
+			$context['filter']['ns'] = vnbiz_namespace_id();
+		});
+		
 	}
 
 	public function schema()
@@ -1041,10 +1069,13 @@ class Model
 				return "`$name`";
 			}, $field_names);
 
-			$sql_field_names = join(",", $sql_field_names);
+			if (isset($GLOBALS['VNBIZ_NAMESPACES']) && $model_name != 'namespace') {
+				$sql_field_names = '`ns`,' . join(",", $sql_field_names);
+			} else {
+				$sql_field_names = join(",", $sql_field_names);
+			}
 
 			isset($context['sql']) ?: $context['sql'] = '';
-
 			if (!vnbiz_sql_table_index_exists($model_name, $index_key)) {
 				$context['sql'] .= "
 					CREATE UNIQUE INDEX `$index_key` ON `$model_name` ($sql_field_names);
@@ -1064,7 +1095,11 @@ class Model
 				return "`$name`";
 			}, $field_names);
 
-			$sql_field_names = join(",", $sql_field_names);
+			if (isset($GLOBALS['VNBIZ_NAMESPACES']) && $model_name != 'namespace') {
+				$sql_field_names = '`ns`,' . join(",", $sql_field_names);
+			} else {
+				$sql_field_names = join(",", $sql_field_names);
+			}
 
 			isset($context['sql']) ?: $context['sql'] = '';
 

@@ -8,6 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 final class OAuthTest extends TestCase
 {
+    public static function setUpBeforeClass(): void {
+        $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
+    }
     // public function setUp(): void {
 
     // }

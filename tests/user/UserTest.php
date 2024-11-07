@@ -8,9 +8,10 @@ use PHPUnit\Framework\TestCase;
 
 final class UserTest extends TestCase
 {
-    // public function setUp(): void {
-
-    // }
+    public static function setUpBeforeClass(): void {
+        $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
+    }
 
     public function test_User_FindSimple(): void
     {

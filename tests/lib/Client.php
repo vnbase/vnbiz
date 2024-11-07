@@ -17,10 +17,13 @@ class Client
      */
     public function REQUEST($formData, $headers = [], $url = 'http://localhost:80/test/')
     {
-
+        $url = 'http://localhost:80/test/?ns=' . vnbiz_encrypt_id(14);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
+            $headers[] = 'X-NAMESPACE: ' . vnbiz_encrypt_id(14); //TODO: Fix this
+            //TODO: namespace in body doesn't work
+            //TODO: namespace must be used by default, because old db don't work
         }
 
         // Initialize a cURL session
@@ -149,20 +152,20 @@ class Client
         if ($refresh_token !== null) {
             $val = $refresh_token;
         }
-        
+
         $this->client_access_token = null;
         [$code, $body] = $this->REQUEST([
             'grant_type' => 'refresh_token',
             'refresh_token' => $val
         ]);
-        
+
         if (isset($body['access_token'])) {
             $this->client_access_token = $body['access_token'];
         };
         if (isset($body['refresh_token'])) {
             $this->client_refresh_token = $body['refresh_token'];
         };
-        
+
         return [$code, $body];
     }
     public function loginSuper()
