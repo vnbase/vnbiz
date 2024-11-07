@@ -38,7 +38,7 @@ final class S3Test extends TestCase
         $this->assertArrayHasKey('path_0', $model['@image_1'], 'image_1 has path_0');
         $this->assertArrayHasKey('url_0', $model['@image_1'], 'image_1 has url_0');
 
-        [$status, $body] = $client->model_find('testmodela', $model['id']);
+        [$status, $body] = $client->model_find('testmodela', ['id' => $model['id']]);
         $this->assertEquals(200, $status, 'find model returns 200');
         $this->assertArrayHasKey('models', $body, 'has mdels');
         $models = $body['models'];

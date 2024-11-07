@@ -16,11 +16,11 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # installs the 'gd' extension. For additional tips on running apt-get, see
 # https://docs.docker.com/go/dockerfile-aptget-best-practices/
 RUN apt-get update && apt-get install -y \
+libmagickwand-dev libmagickcore-dev \
+libzip-dev
     # zlib1g-dev \
-    libfreetype-dev \
+    # libfreetype-dev \
     # libjpeg62-turbo-dev libpng-dev \
-    libmagickwand-dev libmagickcore-dev \
-    libzip-dev
 # RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 #     && docker-php-ext-install -j$(nproc) gd
 
