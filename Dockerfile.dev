@@ -1,5 +1,5 @@
 
-FROM 8.3.13-apache-bullseye as final
+FROM 8.3.13-apache as final
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
