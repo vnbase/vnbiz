@@ -24,9 +24,9 @@ services:
       - mysql8
       - redis7
     healthcheck:
-      test: ["CMD", "curl", "--fail-with-body", "http://localhost:8080/test/?action=service_health_check"]
-      interval: 1s
-      timeout: 3s
+      test: ["CMD", "curl", "--fail-with-body", "http://localhost:80/test/?action=service_health_check"]
+      interval: 5s
+      timeout: 5s
       retries: 5
 
   mysql8:
