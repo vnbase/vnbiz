@@ -681,7 +681,7 @@ class VnBiz
 				$context['debug'][] = $context;
 				$context['debug'][] = ['sql', $model_name, $sql_query, $sql_params];
 			}
-			printf("sql_query: %s %s\n", $sql_query, json_encode($sql_params));
+			// printf("sql_query: %s %s\n", $sql_query, json_encode($sql_params));
 			$rows = R::find($model_name, $sql_query, $sql_params);
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];
