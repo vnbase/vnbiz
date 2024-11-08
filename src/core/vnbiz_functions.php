@@ -676,3 +676,7 @@ function vnbiz_namespace_id()
     throw new Error("Namespace is missing");
     return 0;
 }
+
+function vnbiz_module_namespace_enabled() {
+    return isset($GLOBALS['vnbiz_namespace_id']);
+}
