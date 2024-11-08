@@ -23,6 +23,16 @@ function vnbiz_getIPAddress()
 
 function vnbiz_getBrowserInfo()
 {
+    if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+
+        return array(
+            'userAgent' => '',
+            'name'      => '',
+            'version'   => '',
+            'platform'  => '',
+            'pattern'    => ''
+        );
+    }
     $u_agent = $_SERVER['HTTP_USER_AGENT'];
     $bname = 'Unknown';
     $platform = 'Unknown';

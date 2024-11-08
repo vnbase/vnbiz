@@ -81,15 +81,6 @@ trait Model_event
     {
         $model_name = $this->schema->model_name;
 
-        vnbiz_add_action("db_before_create_$model_name", $func);
-
-        return $this;
-    }
-
-    public function db_begin_create($func)
-    {
-        $model_name = $this->schema->model_name;
-
         vnbiz_add_action("db_before_create", function (&$context) use ($func, $model_name) {
             if (isset($context['model_name']) && $context['model_name'] == $model_name) {
                 $func($context);
@@ -99,7 +90,17 @@ trait Model_event
         return $this;
     }
 
-    public function db_begin_update($func)
+    public function db_begin_create($func)
+    {
+        $model_name = $this->schema->model_name;
+
+        vnbiz_add_action("db_before_create_$model_name", $func);
+
+        return $this;
+    }
+
+
+    public function db_before_update($func)
     {
         $model_name = $this->schema->model_name;
 
@@ -112,16 +113,11 @@ trait Model_event
         return $this;
     }
 
-    public function db_begin_find($func)
+    public function db_begin_update($func)
     {
         $model_name = $this->schema->model_name;
 
-        vnbiz_add_action("db_before_find", function (&$context) use ($func, $model_name) {
-            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
-                $func($context);
-            }
-        });
-
+        vnbiz_add_action("db_before_update_$model_name", $func);
         return $this;
     }
 
@@ -165,7 +161,13 @@ trait Model_event
     public function db_before_find($func)
     {
         $model_name = $this->schema->model_name;
-        vnbiz_add_action("db_before_find_$model_name", $func);
+        // vnbiz_add_action("db_before_find_$model_name", $func);
+
+        vnbiz_add_action("db_before_find", function (&$context) use ($func, $model_name) {
+            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
+                $func($context);
+            }
+        });
 
         return $this;
     }
@@ -174,14 +176,6 @@ trait Model_event
     {
         $model_name = $this->schema->model_name;
         vnbiz_add_action("db_after_find_$model_name", $func);
-
-        return $this;
-    }
-
-    public function db_before_update($func)
-    {
-        $model_name = $this->schema->model_name;
-        vnbiz_add_action("db_before_update_$model_name", $func);
 
         return $this;
     }
@@ -236,7 +230,12 @@ trait Model_event
     public function db_before_count($func)
     {
         $model_name = $this->schema->model_name;
-        vnbiz_add_action("db_before_count_$model_name", $func);
+
+        vnbiz_add_action("db_before_count", function (&$context) use ($func, $model_name) {
+            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
+                $func($context);
+            }
+        });
 
         return $this;
     }

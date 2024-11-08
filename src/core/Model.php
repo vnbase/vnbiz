@@ -34,18 +34,23 @@ class Model
 		$this->web_secure_id('ns');
 
 		$this->db_before_create(function (&$context) {
+			$context['model'] = $context['model'] ?? [];
 			$context['model']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_update(function (&$context) {
+			$context['filter'] = $context['filter'] ?? [];
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_find(function (&$context) {
+			$context['filter'] = $context['filter'] ?? [];
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_count(function (&$context) {
+			$context['filter'] = $context['filter'] ?? [];
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_delete(function (&$context) {
+			$context['filter'] = $context['filter'] ?? [];
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		

@@ -15,13 +15,13 @@ class Client
             'file' => new CURLFile($filePath)  // Attach the file
         ];
      */
-    public function REQUEST($formData, $headers = [], $url = 'http://localhost:80/test/')
+    public function REQUEST($formData, $headers = [], $url = 'http://localhost:6666/test/')
     {
-        $url = 'http://localhost:80/test/?ns=' . vnbiz_encrypt_id(14);
+        $url = 'http://localhost:6666/test/?debug=true&ns=' . vnbiz_encrypt_id(18);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
-            $headers[] = 'X-NAMESPACE: ' . vnbiz_encrypt_id(14); //TODO: Fix this
+            // $headers[] = 'X-NAMESPACE: ' . vnbiz_encrypt_id(17); //TODO: Fix this
             //TODO: namespace in body doesn't work
             //TODO: namespace must be used by default, because old db don't work
         }

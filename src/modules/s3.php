@@ -178,7 +178,7 @@ function vnbiz_init_module_s3()
         ->int('size', 'width', 'height')
         ->text('path_0', 'path_1', 'path_2', 'path_3', 'path_4', 'path_5', 'path_6', 'path_7', 'path_8', 'path_9')
         ->no_update()
-        ->db_begin_create(function (&$context) {
+        ->db_before_create(function (&$context) {
             $file_id = vnbiz_unique_text();
             $model = &$context['model'];
             $original_file_name = $context['model']['name'];
@@ -322,8 +322,8 @@ trait vnbiz_trait_s3_file
             }
         };
 
-        $this->db_begin_create($upload_file);
-        $this->db_begin_update($upload_file);
+        $this->db_before_create($upload_file);
+        $this->db_before_update($upload_file);
 
         $delete_files = function (&$context) {
             if (isset($context['temp_files'])) {
@@ -401,8 +401,8 @@ trait vnbiz_trait_s3_file
             }
         };
 
-        $this->db_begin_create($upload_file);
-        $this->db_begin_update($upload_file);
+        $this->db_before_create($upload_file);
+        $this->db_before_update($upload_file);
 
         $this->db_after_find(function (&$context) use ($field_name) {
             if (!isset($context['models'])) {

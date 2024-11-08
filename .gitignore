@@ -3,3 +3,4 @@ vendor/*
 data.mysql
 data.minio
 data.mysql.test
+test-results

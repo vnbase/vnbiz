@@ -209,11 +209,11 @@ function vnbiz_model_create($model_name, $model, $in_trans = false)
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
-        // 'model_name' => $model_name,
+        'model_name' => $model_name,
         'model' => $model,
         'in_trans' => $in_trans
     ];
-    vnbiz_do_action("model_create_$model_name", $context);
+    vnbiz_do_action("model_create", $context);
     return $context['model'];
 }
 
@@ -229,9 +229,10 @@ function vnbiz_model_count($model_name, $filter = [])
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
+        'model_name' => $model_name,
         'filter' => $filter
     ];
-    vnbiz_do_action("model_count_$model_name", $context);
+    vnbiz_do_action("model_count", $context);
 
     return $context['count'];
 }
@@ -241,11 +242,11 @@ function vnbiz_model_find($model_name, $filter = [], $meta = ['limit' => 10, 'of
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
-        // 'model_name' => $model_name,
+        'model_name' => $model_name,
         'filter' => $filter,
         'meta' =>  $meta
     ];
-    vnbiz_do_action("model_find_$model_name", $context);
+    vnbiz_do_action("model_find", $context);
     return $context['models'];
 }
 
@@ -265,13 +266,13 @@ function vnbiz_model_update($model_name, $filter, $model, $meta = [], $in_trans 
 {
     vnbiz_assure_model_name_exists($model_name);
     $context = [
-        // 'model_name' => $model_name,
+        'model_name' => $model_name,
         'filter' => $filter,
         'model' => $model,
         'meta' => $meta,
         'in_trans' => $in_trans
     ];
-    vnbiz_do_action("model_update_$model_name", $context);
+    vnbiz_do_action("model_update", $context);
 
     return $context['old_model'];
 }
@@ -280,11 +281,11 @@ function vnbiz_model_delete($model_name, $filter, $in_trans = false)
 {
     vnbiz_assure_model_name_exists($model_name);
     $context = [
-        // 'model_name' => $model_name,
+        'model_name' => $model_name,
         'filter' => $filter,
         'in_trans' => $in_trans
     ];
-    vnbiz_do_action("model_delete_$model_name", $context);
+    vnbiz_do_action("model_delete", $context);
     return $context['old_model'];
 }
 

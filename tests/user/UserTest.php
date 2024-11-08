@@ -9,12 +9,12 @@ use PHPUnit\Framework\TestCase;
 final class UserTest extends TestCase
 {
     public static function setUpBeforeClass(): void {
-        $client = new Client();
-        [$status, $body]  = $client->callService('service_db_init_default', []);
     }
 
     public function test_User_FindSimple(): void
     {
+        $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
         $client = new Client();
 
         [$httpcode, $body] = $client->model_find('user');

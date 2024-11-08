@@ -9,8 +9,6 @@ use PHPUnit\Framework\TestCase;
 final class OAuthTest extends TestCase
 {
     public static function setUpBeforeClass(): void {
-        $client = new Client();
-        [$status, $body]  = $client->callService('service_db_init_default', []);
     }
     // public function setUp(): void {
 
@@ -18,6 +16,8 @@ final class OAuthTest extends TestCase
 
     public function test_Login_OwnerPassword(): void
     {
+        $client = new Client();
+        [$status, $body]  = $client->callService('service_db_init_default', []);
         $client = new Client();
         [$status, $body] = $client->loginOAuthPassword('superadmin@vnbiz.com', 'superadmin');
         $this->assertEquals(200, $status, 'Login success');

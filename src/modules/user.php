@@ -88,14 +88,16 @@ function vnbiz_user_issue_tokens(&$user, &$context)
     $context['refresh_token'] = vnbiz_token_sign([
         'typ' => 'refresh',
         'sub' => vnbiz_encrypt_id($user['id']),
-        'pas' => vnbiz_user_get_public_hashed_password($user)
+        'pas' => vnbiz_user_get_public_hashed_password($user),
+        'ns' => vnbiz_namespace_id()
     ], VNBIZ_TOKEN_SECRET);
 
     $context['access_token'] = vnbiz_token_sign([
         'typ' => 'access',
         'sub' => vnbiz_encrypt_id($user['id']),
         'per' => $permissions,
-        'per_s' => $permission_scope
+        'per_s' => $permission_scope,
+        'ns' => vnbiz_namespace_id()
     ], VNBIZ_TOKEN_SECRET, time() + $expire_in);
 
     $context['token_type'] = 'Bearer';
@@ -225,7 +227,7 @@ function vnbiz_init_module_user()
             $context['error'] = "Missing username or password";
             return;
         }
-
+        //TODO: Check token namespace
         $user = null;
         if (isset($context['params']['refresh_token'])) {
             $arr = vnbiz_token_verify($context['params']['refresh_token'], VNBIZ_TOKEN_SECRET);
@@ -252,11 +254,18 @@ function vnbiz_init_module_user()
             $user = vnbiz_model_find_one('user', [
                 'username' => $username  //find by username
             ]);
+            // $xxx = [
+            //     'model_name' => 'user',
+            //     'filter' => [
+            //         'email' => $username
+            //     ]
+            // ];
+            // vnbiz_do_action('model_find', $xxx);
             if (!$user) {
                 $user = vnbiz_model_find_one('user', [
                     'email' => $username  //find by email
                 ]);
-            }
+            } 
             if (!$user) {
                 $user = vnbiz_model_find_one('user', [
                     'phone' => $username  //find by phone

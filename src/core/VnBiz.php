@@ -122,7 +122,7 @@ class VnBiz
 					$result['code'] = 'success';
 					break;
 				case 'model_count':
-					throw new VnBizError("Operator is not supported", "unsupported");
+					// throw new VnBizError("Operator is not supported", "unsupported");
 					vnbiz_do_action('web_model_count', $context);
 					$result = $context;
 					$result['code'] = 'success';
@@ -548,6 +548,14 @@ class VnBiz
 
 			$this->actions()->do_action("db_before_count_$model_name", $context);
 
+			if (isset($context['debug']) && $context['debug']) {
+				if (!is_array($context['debug'])) {
+					$context['debug'] = [];
+				}
+				$context['debug'][] = $context;
+				$context['debug'][] = ['sql', $model_name, $conditions_query, $conditions_param];
+			}
+
 			$context['count'] = R::count($model_name, $conditions_query, $conditions_param);
 
 			$this->actions()->do_action("db_after_count_$model_name", $context);
@@ -591,6 +599,7 @@ class VnBiz
 			}
 
 			$field_names = vnbiz_get_model_field_names($model_name);
+
 			foreach ($field_names as $field_name) {
 				if (isset($filter[$field_name])) {
 					$value = $filter[$field_name];
@@ -661,9 +670,15 @@ class VnBiz
 			$conditions_query = join(' AND ', $conditions_query);
 
 			$sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
-			// $context['sql'] = [];
-			// $context['sql'][] = [$sql_query, array_merge($conditions_param, [$limit, $offset])];
-			// error_log($sql_query);
+
+			if (isset($context['debug']) && $context['debug']) {
+				if (!is_array($context['debug'])) {
+					$context['debug'] = [];
+				}
+				$context['debug'][] = $context;
+				$context['debug'][] = ['sql', $model_name, $sql_query, array_merge($conditions_param, [$limit, $offset])];
+			}
+
 			$rows = R::find($model_name, $sql_query, array_merge($conditions_param, [$limit, $offset]));
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];
