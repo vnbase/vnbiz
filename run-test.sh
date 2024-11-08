@@ -1,10 +1,10 @@
-sudo rm -rf ./data.mysql.test
-sudo docker compose -f compose.test.yaml up --build --wait
+ rm -rf ./data.mysql.test
+ docker compose -f compose.test.yaml up --build --wait
 
 max_retry=5
 counter=0
-echo "curl --fail-with-body http://localhost:8080/test/sql.php"
-until curl --fail-with-body http://localhost:8080/test/sql.php
+echo "curl --fail-with-body http://localhost:8888/test/sql.php"
+until curl --fail-with-body http://localhost:8888/test/sql.php
 do
    sleep 3
    [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1
@@ -16,11 +16,11 @@ echo "############################# START TESTING ###########################"
 
 # docker-compose exec webapp $TEST_COMMAND
 #  --testsuite project
-sudo docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml 
+ docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
 TEST_RESULT=$?
 echo "############################# END TESTING ###########################"
 
-sudo docker compose  -f compose.test.yaml down
+ docker compose  -f compose.test.yaml down
 
 
 # Exit with the test result code
@@ -29,7 +29,7 @@ if [ $TEST_RESULT -eq 0 ]; then
 else
   echo "Tests failed."
 fi
-sudo rm -rf ./data.mysql.test
+ rm -rf ./data.mysql.test
 
 echo $TEST_RESULT;
 

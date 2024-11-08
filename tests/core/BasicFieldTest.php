@@ -6,7 +6,7 @@ require(__DIR__ . '/../lib/Client.php');
 
 use PHPUnit\Framework\TestCase;
 
-final class CoreTest extends TestCase
+final class BasicFieldTest extends TestCase
 {
     public static function setUpBeforeClass(): void {}
     public function test_model_create_find_update()

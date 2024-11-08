@@ -171,6 +171,7 @@ class VnBiz
 			}
 		} catch (VnbizError $e) {
 			http_response_code($e->http_status());
+			echo json_encode($e);
 
 			$result = [
 				'code' => $e->get_status(),
@@ -671,15 +672,17 @@ class VnBiz
 
 			$sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
 
+			$sql_params = array_merge($conditions_param, [$limit, $offset]);
+
 			if (isset($context['debug']) && $context['debug']) {
 				if (!is_array($context['debug'])) {
 					$context['debug'] = [];
 				}
 				$context['debug'][] = $context;
-				$context['debug'][] = ['sql', $model_name, $sql_query, array_merge($conditions_param, [$limit, $offset])];
+				$context['debug'][] = ['sql', $model_name, $sql_query, $sql_params];
 			}
-
-			$rows = R::find($model_name, $sql_query, array_merge($conditions_param, [$limit, $offset]));
+			printf("sql_query: %s %s\n", $sql_query, json_encode($sql_params));
+			$rows = R::find($model_name, $sql_query, $sql_params);
 			$rows = R::beansToArray($rows);
 			$context['models'] = [];
 

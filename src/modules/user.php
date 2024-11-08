@@ -61,7 +61,8 @@ function vnbiz_user_all_permissions($user_id)
             }
             if (isset($useringroup['@usergroup_id']['permissions_scope'])) {
                 foreach (array_keys($useringroup['@usergroup_id']['permissions_scope']) as $scope) {
-                    $permissions_scope[$scope] = true;
+                    isset($permissions_scope[$scope]) ?: $permissions_scope[$scope] = [];
+                    $permissions_scope[$scope][] = $useringroup['@usergroup_id']['id'];
                 }
             }
         }
@@ -333,7 +334,7 @@ function vnbiz_init_module_user()
             'name' => 'Super Admin Group',
             'description' => 'You know, for Supert Admin user',
             'permissions' => 'super',
-            'permission_scope' => [
+            'permissions_scope' => [
                 '.' => true
             ]
         ]);

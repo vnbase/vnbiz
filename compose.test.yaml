@@ -3,7 +3,7 @@ services:
     build:
       dockerfile: Dockerfile.test
     ports:
-      - 6666:6666
+      - 8888:8888
     volumes:
       - ./src:/var/www/html/src
       - ./test:/var/www/html/test

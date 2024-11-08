@@ -1029,7 +1029,7 @@ class Model
 				$models = &$context['models'];
 				foreach ($field_names as $field_name) {
 					foreach ($models as &$model) {
-						if (is_string($model[$field_name])) {
+						if (isset($model[$field_name]) && is_string($model[$field_name])) {
 							$model[$field_name] = intval($model[$field_name]);
 						}
 					}
@@ -1038,7 +1038,7 @@ class Model
 			if (isset($context['old_model'])) {
 				$model = &$context['old_model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1046,7 +1046,7 @@ class Model
 			if (isset($context['model'])) {
 				$model = &$context['model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1097,7 +1097,7 @@ class Model
 				$models = &$context['models'];
 				foreach ($field_names as $field_name) {
 					foreach ($models as &$model) {
-						if (is_string($model[$field_name])) {
+						if (isset($model[$field_name]) && is_string($model[$field_name])) {
 							$model[$field_name] = intval($model[$field_name]);
 						}
 					}
@@ -1106,7 +1106,7 @@ class Model
 			if (isset($context['old_model'])) {
 				$model = &$context['old_model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1114,7 +1114,7 @@ class Model
 			if (isset($context['model'])) {
 				$model = &$context['model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1165,7 +1165,7 @@ class Model
 				$models = &$context['models'];
 				foreach ($models as &$model) {
 					foreach ($field_names as $field_name) {
-						if (is_string($model[$field_name])) {
+						if (isset($model[$field_name]) && is_string($model[$field_name])) {
 							$model[$field_name] = floatval($model[$field_name]);
 						}
 					}
@@ -1175,7 +1175,7 @@ class Model
 			if (isset($context['old_model'])) {
 				$model = &$context['old_model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = floatval($model[$field_name]);
 					}
 				}
@@ -1184,7 +1184,7 @@ class Model
 			if (isset($context['model'])) {
 				$model = &$context['model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = floatval($model[$field_name]);
 					}
 				}
@@ -1332,7 +1332,7 @@ class Model
 				$models = &$context['models'];
 				foreach ($field_names as $field_name) {
 					foreach ($models as &$model) {
-						if (is_string($model[$field_name])) {
+						if (isset($model[$field_name]) && is_string($model[$field_name])) {
 							$model[$field_name] = intval($model[$field_name]);
 						}
 					}
@@ -1341,7 +1341,7 @@ class Model
 			if (isset($context['old_model'])) {
 				$model = &$context['old_model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1349,7 +1349,7 @@ class Model
 			if (isset($context['model'])) {
 				$model = &$context['model'];
 				foreach ($field_names as $field_name) {
-					if (is_string($model[$field_name])) {
+					if (isset($model[$field_name]) && is_string($model[$field_name])) {
 						$model[$field_name] = intval($model[$field_name]);
 					}
 				}
@@ -1708,7 +1708,7 @@ class Model
 				foreach ($field_names as $field_name) {
 					foreach ($context['models'] as &$model) {
 						if (isset($model[$field_name])) {
-							$context['model'][$field_name] =  substr($context['model'][$field_name], -6);
+							$model[$field_name] =  substr($model[$field_name], -6);
 						}
 					}
 				}

@@ -7,8 +7,8 @@ include_once(__DIR__ . "/../src/vnbiz.php");
 
 vnbiz()
 	->init_app('test', 'THE_TK_SECRET')
-	// ->init_db_mysql('10.10.0.3', 'vnbase_test', 'vnbase_test', 'vnbase_test')
-	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
+	->init_db_mysql('10.10.0.3', 'vnbase_test', 'vnbase_test', 'vnbase_test')
+	// ->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
 	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http')
 	->init_oauth_google('1065936865511-k69f16m125i0r2f5vdtc1dau7kcrm71f.apps.googleusercontent.com', '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')
 	->init_redis('redis7')
@@ -87,7 +87,6 @@ vnbiz_model_add('testmodela')
 	], 'status_1')
 	->require('string_1')
 	->ref('testmodelb_id', 'testmodelb')
-	->unique('require_1', ['string_1', 'int_1'])
 	->author()
 	->password('password_1', "password_2")
 	->s3_image('image_1', [50], [100, 100])
@@ -95,6 +94,22 @@ vnbiz_model_add('testmodela')
 	->index('index_name_1', ['string_1', 'int_1'])
 	->text_search('text_1', 'text_2')
 
+;
+
+vnbiz_model_add('testscope')
+	->has_datascope()
+	->string('string_1', 'string_2')
+	->int('int_1', 'int_2')
+	->text_search('string_1', 'string_2')
+	->unique('require_1', ['string_1', 'string_2'])
+;
+
+
+vnbiz_model_add('testmodelunique')
+	->string('string_1', 'string_2')
+	->int('int_1', 'int_2')
+	->unique('require_1', ['string_1', 'string_2'])
+	->text_search('string_1', 'string_2')
 ;
 
 

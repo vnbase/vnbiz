@@ -45,7 +45,20 @@ class Actions
 
     public function do_action($action, &$context = [])
     {
-        // echo "do_action: $action\n";
+        // $str = '';
+        // $model_name = '';
+        // $meta = '';
+        // if (isset($context['filter'])) {
+        //     $str = json_encode($context['filter']);
+        // }
+        // if (isset($context['model_name'])) {
+        //     $model_name = $context['model_name'];
+        // }
+        // if (isset($context['meta'])) {
+        //     $meta = json_encode($context['meta']);
+        // }
+        // echo ("do_action: $action, model: $model_name, fitler: $str, meta: $meta \n");
+
         if (isset($this->actions[$action])) {
             foreach ($this->actions[$action] as $func) {
                 call_user_func_array($func, [&$context]);
