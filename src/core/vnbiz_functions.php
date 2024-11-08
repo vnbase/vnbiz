@@ -680,3 +680,13 @@ function vnbiz_namespace_id()
 function vnbiz_module_namespace_enabled() {
     return isset($GLOBALS['vnbiz_namespace_id']);
 }
+
+function vnbiz_get_ids($array) {
+    $ids = [];
+    foreach ($array as $item) {
+        if (isset($item['id'])) {
+            $ids[] = $item['id'];
+        }
+    }
+    return $ids;
+}

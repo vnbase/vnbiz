@@ -310,8 +310,6 @@ function vndb_model_find_one($table_name, $filter = [])
 	return null;
 }
 
-
-
 // vndb_init("localhost", "vnrootco_demo", "vnrootC@7JcWZx-Y!VX7*$@XkHQ", "vnrootco_demo");
 
 // $result = vndb_model_find('user', [

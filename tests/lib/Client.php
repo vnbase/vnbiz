@@ -32,6 +32,11 @@ class Client
         $old_model = isset($body['old_model']) ? json_encode($body['old_model'], JSON_PRETTY_PRINT) : '[old_model]';
 
         print_r(">>> $code, $message, $model,  $models, $old_model, $filter \n");
+        if ($code !== 'success') {
+            $error = isset($body['error']) ? $body['error'] : '[error]';
+            $stack = isset($body['stack']) ? $body['stack'] : '[stack]';
+            print_r(">>> $error, $stack \n");
+        }
     }
     /**
      * $formData = [
@@ -42,7 +47,7 @@ class Client
      */
     public function REQUEST($formData, $headers = [], $url = 'http://localhost:8888/test/')
     {
-        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(33);
+        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(44);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
@@ -88,12 +93,12 @@ class Client
 
         $jsonResponse = json_decode($response, true); // true = return as associative array
 
-        // $this->log_send($formData);
+        $this->log_send($formData);
 
         // Close the cURL session
         if (json_last_error() === JSON_ERROR_NONE) {
 
-            // $this->log_receive($jsonResponse);
+            $this->log_receive($jsonResponse);
 
             return [$httpStatusCode, $jsonResponse];
         } else {

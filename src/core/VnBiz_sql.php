@@ -126,31 +126,27 @@ trait VnBiz_sql
         });
     }
 
-    private function add_action_model_find()
+    public function add_action_model_sql_gen_filter()
     {
-        $this->actions()->add_action_one('model_find', function (&$context) {
-            $meta = vnbiz_get_var($context['meta'], []);
-            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
-
-            $skip_db_actions ?: $this->actions()->do_action('db_before_find', $context);
-
+        vnbiz_add_action('sql_gen_filter', function (&$context) {
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
             }
+            if (!isset($context['sql_query_conditions'])) {
+                $context['sql_query_conditions'] = [];
+            }
+            if (!isset($context['sql_query_params'])) {
+                $context['sql_query_params'] = [];
+            }
+            $sql_query_conditions = &$context['sql_query_conditions'];
+            $sql_query_params = &$context['sql_query_params'];
 
+            $filter = &$context['filter'];
             $model_name = $context['model_name'];
-            $filter = vnbiz_get_var($context['filter'], []);
-            $order = vnbiz_get_var($meta['order'], []);
-            $limit = vnbiz_get_var($meta['limit'], 100);
+            $meta = vnbiz_get_var($context['meta'], []);
+            $schema = $this->models[$context['model_name']]->schema();
             $text_search = vnbiz_get_var($meta['text_search'], null);
-            $offset = vnbiz_get_var($meta['offset'], 0);
-            $ref = vnbiz_get_var($meta['ref'], false);
-            $count = vnbiz_get_var($meta['count'], false);
-            $sql_query_conditions = [];
-            $sql_query_params = [];
-            $order_query = [];
 
-            $schema = $this->models[$model_name]->schema();
 
             if ($text_search && $schema->text_search) {
                 $fields = array_map(function ($item) {
@@ -164,8 +160,8 @@ trait VnBiz_sql
             }
 
             $field_names = vnbiz_get_model_field_names($model_name);
-
             foreach ($field_names as $field_name) {
+
                 if (isset($filter[$field_name])) {
                     $value = $filter[$field_name];
 
@@ -214,38 +210,75 @@ trait VnBiz_sql
                         $sql_query_params[] = $value;
                     }
                 }
+            }
+        });
+    }
 
+    public function add_action_model_sql_gen_order()
+    {
+        vnbiz_add_action('sql_gen_order', function (&$context) {
+            if (!isset($context['model_name'])) {
+                throw new VnBizError('Missing model_name', 'invalid_context');
+            }
+
+            $model_name = $context['model_name'];
+            $order_query = [];
+
+            $meta = vnbiz_get_var($context['meta'], []);
+            $order = vnbiz_get_var($meta['order'], []);
+
+            $field_names = vnbiz_get_model_field_names($model_name);
+
+            foreach ($field_names as $field_name) {
                 if (isset($order[$field_name])) {
                     $order_query[] = $order[$field_name] > 0 ? $field_name : $field_name . ' DESC';
                 }
             }
+
             $order_query = join(', ', $order_query);
             $order_query = $order_query ? ' ORDER BY ' . $order_query : '';
 
+            $context['sql_query_order'] = $order_query;
+        });
+    }
+
+    private function add_action_model_find()
+    {
+        $this->actions()->add_action_one('model_find', function (&$context) {
+            $meta = vnbiz_get_var($context['meta'], []);
+            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
+
+            $skip_db_actions ?: $this->actions()->do_action('db_before_find', $context);
+
+            if (!isset($context['model_name'])) {
+                throw new VnBizError('Missing model_name', 'invalid_context');
+            }
+
+            $model_name = $context['model_name'];
+
+            vnbiz_do_action('sql_gen_filter', $context);
+            vnbiz_do_action('sql_gen_order', $context);
+
             $skip_db_actions ?: $this->actions()->do_action("db_before_find_$model_name", $context);
 
-            $context['db_context'] = [
-                'sql_query_conditions' => &$sql_query_conditions,
-                'sql_query_params' => &$sql_query_params
-            ];
+            $sql_query_conditions = &$context['sql_query_conditions'];
+            $sql_query_params = &$context['sql_query_params'];
+            $sql_query_order = vnbiz_get_var($context['sql_query_order'], '');
 
-            vnbiz_do_action("db_before_find_exe_$model_name", $context);
-            unset($context['db_context']);
+            $limit = vnbiz_get_var($meta['limit'], 100);
+            $offset = vnbiz_get_var($meta['offset'], 0);
+            $ref = vnbiz_get_var($meta['ref'], false);
+            $count = vnbiz_get_var($meta['count'], false);
 
             $sql_query_conditions = join(' AND ', $sql_query_conditions);
 
-            $sql_query = $sql_query_conditions . $order_query . ' LIMIT ? OFFSET ?';
+            $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ?';
 
             $sql_params = array_merge($sql_query_params, [$limit, $offset]);
 
-            if (isset($context['debug']) && $context['debug']) {
-                if (!is_array($context['debug'])) {
-                    $context['debug'] = [];
-                }
-                $context['debug'][] = $context;
-                $context['debug'][] = ['sql', $model_name, $sql_query, $sql_params];
-            }
-            // printf("sql_query: %s %s\n", $sql_query, json_encode($sql_params));
+            $context['sql_query'] = $sql_query;
+            $context['sql_params'] = $sql_params;
+
             $rows = R::find($model_name, $sql_query, $sql_params);
             $rows = R::beansToArray($rows);
             $context['models'] = [];
@@ -330,7 +363,6 @@ trait VnBiz_sql
 
     private function add_action_model_delete()
     {
-
         $this->actions()->add_action_one('model_delete', function (&$context) {
             $this->actions()->do_action('db_before_delete', $context);
 
@@ -342,21 +374,8 @@ trait VnBiz_sql
                 throw new VnBizError('Missing filter', 'invalid_context');
             }
 
-
             $model_name = $context['model_name'];
-            $filter = $context['filter'];
-            $sql_query_conditions = [];
-            $sql_query_params = [];
-
             $field_names = vnbiz_get_model_field_names($model_name);
-            foreach ($field_names as $field_name) {
-                if (isset($filter[$field_name])) {
-                    $sql_query_conditions[] = "$field_name=?";
-                    $sql_query_params[] = $filter[$field_name];
-                }
-            }
-
-            $sql_query_conditions = join(' AND ', $sql_query_conditions) . ' LIMIT 1';
 
             $in_trans = vnbiz_get_key($context, 'in_trans', false);
             if (!$in_trans) {
@@ -365,23 +384,36 @@ trait VnBiz_sql
 
             !$in_trans && R::begin();
             try {
-                $rows = R::find($model_name, $sql_query_conditions, $sql_query_params);
+                $find_context = [
+                    'model_name' => $context['model_name'],
+                    'filter' => $context['filter'],
+                    'meta' => [
+                        'limit' => 1
+                    ],
+                    'in_trans' => true
+                ];
+
+                vnbiz_do_action('model_find', $find_context);
+                $context['sql_query_conditions'] = $find_context['sql_query_conditions'];
+                $context['sql_query_params'] = $find_context['sql_query_params'];
+
+                $rows = isset($find_context['models']) ? $find_context['models'] : [];
 
                 if (sizeof($rows) == 0) {
                     throw new VnBizError('Model do not exist', 'model_not_found');
                 }
-                $context['old_model'] = R::beansToArray($rows)[0];
+
+                $context['old_model'] = $rows[0];
                 $context['old_model']['@model_name'] = $model_name;
 
-                $field_names = vnbiz_get_model_field_names($model_name);
-                foreach ($field_names as $field_name) {
-                    if (isset($model[$field_name])) {
-                        $row[$field_name] = $model[$field_name];
-                    }
-                }
+                // foreach ($field_names as $field_name) {
+                //     if (isset($model[$field_name])) {
+                //         $row[$field_name] = $model[$field_name];
+                //     }
+                // }
 
                 $this->actions()->do_action("db_before_delete_$model_name", $context);
-                R::trashAll($rows);
+                R::trashBatch($model_name, vnbiz_get_ids($rows));
                 $this->actions()->do_action("db_after_delete_$model_name", $context);
 
                 !$in_trans && R::commit();
@@ -514,21 +546,6 @@ trait VnBiz_sql
         });
     }
 
-    public function add_action_model_sql_filter() {
-        vnbiz_add_action('db_before_find_exe', function (&$context) {
-            $db_context = vnbiz_get_var($context['db_context'], []);
-            $sql_query_conditions = vnbiz_get_var($db_context['sql_query_conditions'], []);
-            $sql_query_params = vnbiz_get_var($db_context['sql_query_params'], []);
-
-            $sql_query = $sql_query_conditions . ' LIMIT ? OFFSET ?';
-
-            $sql_params = array_merge($sql_query_params, [$limit, $offset]);
-
-            $context['sql_query'] = $sql_query;
-            $context['sql_params'] = $sql_params;
-        });
-    }
-
     public function init_db_mysql($servername = 'localhost', $username = "", $password = "", $dbname = '')
     {
         R::setup("mysql:host=$servername;dbname=$dbname", $username, $password); //for both mysql or mariaDB
@@ -539,7 +556,8 @@ trait VnBiz_sql
         $this->add_action_model_find();
         $this->add_action_model_delete();
         $this->add_action_model_count();
-        $this->add_action_model_sql_filter();
+        $this->add_action_model_sql_gen_filter();
+        $this->add_action_model_sql_gen_order();
 
         return $this;
     }

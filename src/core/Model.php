@@ -474,25 +474,24 @@ class Model
 		$this->db_after_delete($func_delete_model_tags);
 
 		$before_db_before_exec = function (&$context) use ($model_name) {
-			$db_context = &$context['db_context'];
 			$tags = [];
 			if (isset($context['filter']) && isset($context['filter']['@tags'])) {
 				$tags = $context['filter']['@tags'];
 			}
 			if (sizeof($tags) > 0) {
-				$query = &$db_context['sql_query_conditions'];
-				$param = &$db_context['sql_query_params'];
-				$query[] = "(id IN (SELECT mt.model_id FROM modeltag mt INNER JOIN tag t ON t.id=mt.tag_id AND mt.model_name=? AND t.name IN (" . R::genSlots($tags) . ") GROUP BY mt.model_id HAVING COUNT(t.id)=? ))";
-				$param[] = $model_name;
-				array_push($param, ...$tags);
-				$param[] = sizeof($tags);
+				$sql_query_conditions = &$context['sql_query_conditions'];
+				$sql_query_params = &$context['sql_query_params'];
+				$sql_query_conditions[] = "(id IN (SELECT mt.model_id FROM modeltag mt INNER JOIN tag t ON t.id=mt.tag_id AND mt.model_name=? AND t.name IN (" . R::genSlots($tags) . ") GROUP BY mt.model_id HAVING COUNT(t.id)=? ))";
+				$sql_query_params[] = $model_name;
+				array_push($sql_query_params, ...$tags);
+				$sql_query_params[] = sizeof($tags);
 			}
 
 			// var_dump($context);
 		};
 
-		vnbiz_add_action("db_before_find_exe_$model_name", $before_db_before_exec);
-		vnbiz_add_action("db_before_count_exe_$model_name", $before_db_before_exec);
+		$this->db_before_find($before_db_before_exec);
+		$this->db_before_count($before_db_before_exec);
 
 		return $this;
 	}
@@ -968,6 +967,57 @@ class Model
 		$this->db_before_create($func_validate_json);
 		$this->db_before_update($func_validate_json);
 
+		// $this->web_after_find(function (&$context) use ($field_names) {
+		// 	$model = &$context['model'];
+
+		// 	foreach ($field_names as $field_name) {
+		// 		if (isset($model[$field_name])) {
+		// 			$value = vnbiz_get_key($model, $field_name);
+		// 			if (is_string($value)) {
+		// 				//validate json, if it invalid, set to {}.
+		// 				// $arr = json_decode($value, true);
+		// 				// if ($arr === false) {
+		// 				// 	$model[$field_name] = '{}';
+		// 				// }
+		// 			} else {
+		// 				$model[$field_name] = json_encode($value);
+		// 			}
+		// 		}
+		// 	}
+		// });
+
+		// // after create find, update, delete => convert json to array
+		$func_convert_to_json_string = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				foreach ($context['models'] as &$model) {
+					foreach ($field_names as $field_name) {
+						if (isset($model[$field_name]) && is_array($model[$field_name])) {
+							$model[$field_name] = json_encode($model[$field_name]);
+						}
+					}
+				}
+			}
+			if (isset($context['model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['model'][$field_name]) && is_array($context['model'][$field_name])) {
+						$context['model'][$field_name] = json_encode($context['model'][$field_name]);
+					}
+				}
+			}
+			if (isset($context['old_model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['old_model'][$field_name]) && is_array($context['old_model'][$field_name])) {
+						$context['old_model'][$field_name] = json_encode($context['old_model'][$field_name]);
+					}
+				}
+			}
+		};
+		
+		$this->web_after_create($func_convert_to_json_string);
+		$this->web_after_find($func_convert_to_json_string);
+		$this->web_after_update($func_convert_to_json_string);
+		$this->web_after_delete($func_convert_to_json_string);
+
 		$this->db_after_get(function (&$context) use ($field_names) {
 			$model = &$context['model'];
 
@@ -989,6 +1039,8 @@ class Model
 				}
 			}
 		});
+
+
 
 		return $this;
 	}
