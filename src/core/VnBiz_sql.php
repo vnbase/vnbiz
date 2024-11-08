@@ -440,103 +440,27 @@ trait VnBiz_sql
             }
 
             $model_name = $context['model_name'];
-            $filter = vnbiz_get_var($context['filter'], []);
-
-            $text_search = vnbiz_get_var($meta['text_search'], null);
-            $sql_query_conditions = [];
-            $sql_query_params = [];
-
-            $schema = $this->models[$model_name]->schema();
-
-            if ($text_search && $schema->text_search) {
-                $fields = array_map(function ($item) {
-                    return '`' . $item . '`';
-                }, $schema->text_search);
-                $fields = join(',', $fields);
-                $text_condition = "MATCH (" . $fields . ') AGAINST(?)';
-
-                $sql_query_conditions[] = $text_condition;
-                $sql_query_params[] = $text_search;
-            }
 
             $field_names = vnbiz_get_model_field_names($model_name);
-            foreach ($field_names as $field_name) {
-                if (isset($filter[$field_name])) {
-                    $value = $filter[$field_name];
 
-                    if ($field_name === 'datascope') {
-                        if (is_array($value)) {
-                            $or_query = [];
-                            if (isset($value[0])) {
-                                foreach ($value as $datascope) {
-                                    $or_query[] = "(datascope LIKE ?)";
-                                    $sql_query_params[] = $datascope . '%';
-                                }
-                            }
-                            $sql_query_conditions[] = join('OR', $or_query);
-                        } else {
-                            $sql_query_conditions[] = "datascope LIKE ?";
-                            $sql_query_params[] = $value . '%';
-                        }
-
-                        continue;
-                    }
-
-                    if (is_array($value)) {
-                        if (isset($value[0])) {
-                            $sql_query_conditions[] = "$field_name IN (" . R::genSlots($value) . ")";
-                            array_push($sql_query_params, ...$value);
-                        } else {
-                            if (array_key_exists('$gt', $value)) {
-                                $sql_query_conditions[] = "$field_name > ?";
-                                $sql_query_params[] = $value['$gt'];
-                            }
-                            if (array_key_exists('$gte', $value)) {
-                                $sql_query_conditions[] = "$field_name >= ?";
-                                $sql_query_params[] = $value['$gte'];
-                            }
-                            if (array_key_exists('$lt', $value)) {
-                                $sql_query_conditions[] = "$field_name < ?";
-                                $sql_query_params[] = $value['$lt'];
-                            }
-                            if (array_key_exists('$lte', $value)) {
-                                $sql_query_conditions[] = "$field_name <= ?";
-                                $sql_query_params[] = $value['$lte'];
-                            }
-                        }
-                    } else {
-                        $sql_query_conditions[] = "$field_name=?";
-                        $sql_query_params[] = $value;
-                    }
-                }
-
-                if (isset($order[$field_name])) {
-                    $order_query[] = $order[$field_name] > 0 ? $field_name : $field_name . ' DESC';
-                }
-            }
-
-            $this->actions()->do_action("db_before_find_$model_name", $context);
-
-
-            $context['db_context'] = [
-                'sql_query_conditions' => &$sql_query_conditions,
-                'sql_query_params' => &$sql_query_params
-            ];
-
-            vnbiz_do_action("db_before_count_exe_$model_name", $context);
-            unset($context['db_context']);
-
-            $sql_query_conditions = join(' AND ', $sql_query_conditions);
+            vnbiz_do_action('sql_gen_filter', $context);
+            vnbiz_do_action('sql_gen_order', $context);
 
             $this->actions()->do_action("db_before_count_$model_name", $context);
+            
+            $sql_query_conditions = &$context['sql_query_conditions'];
+            $sql_query_params = &$context['sql_query_params'];
 
-            if (isset($context['debug']) && $context['debug']) {
-                if (!is_array($context['debug'])) {
-                    $context['debug'] = [];
-                }
-                $context['debug'][] = $context;
-                $context['debug'][] = ['sql', $model_name, $sql_query_conditions, $sql_query_params];
-            }
+
+
+            $sql_query_conditions = join(' AND ', $sql_query_conditions);
+            // if (isset($context['debug']) && $context['debug']) {
+            //     if (!is_array($context['debug'])) {
+            //         $context['debug'] = [];
+            //     }
+            //     $context['debug'][] = $context;
+            //     $context['debug'][] = ['sql', $model_name, $sql_query_conditions, $sql_query_params];
+            // }
 
             $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
 
