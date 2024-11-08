@@ -41,6 +41,8 @@ include __DIR__ . '/core/Schema.php';
 include __DIR__ . '/core/Model_event.php';
 include __DIR__ . '/core/Model_permission.php';
 include __DIR__ . '/core/Model.php';
+include __DIR__ . '/core/VnBiz_sql.php';
+include __DIR__ . '/core/VnBiz_restful.php';
 include __DIR__ . '/core/VnBiz.php';
 
 
