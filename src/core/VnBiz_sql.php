@@ -128,8 +128,6 @@ trait VnBiz_sql
 
     private function add_action_model_find()
     {
-
-
         $this->actions()->add_action_one('model_find', function (&$context) {
             $meta = vnbiz_get_var($context['meta'], []);
             $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
@@ -148,8 +146,8 @@ trait VnBiz_sql
             $offset = vnbiz_get_var($meta['offset'], 0);
             $ref = vnbiz_get_var($meta['ref'], false);
             $count = vnbiz_get_var($meta['count'], false);
-            $conditions_query = [];
-            $conditions_param = [];
+            $sql_query_conditions = [];
+            $sql_query_params = [];
             $order_query = [];
 
             $schema = $this->models[$model_name]->schema();
@@ -161,8 +159,8 @@ trait VnBiz_sql
                 $fields = join(',', $fields);
                 $text_condition = "MATCH (" . $fields . ') AGAINST(?)';
 
-                $conditions_query[] = $text_condition;
-                $conditions_param[] = $text_search;
+                $sql_query_conditions[] = $text_condition;
+                $sql_query_params[] = $text_search;
             }
 
             $field_names = vnbiz_get_model_field_names($model_name);
@@ -177,13 +175,13 @@ trait VnBiz_sql
                             if (isset($value[0])) {
                                 foreach ($value as $datascope) {
                                     $or_query[] = "(datascope LIKE ?)";
-                                    $conditions_param[] = $datascope . '%';
+                                    $sql_query_params[] = $datascope . '%';
                                 }
                             }
-                            $conditions_query[] = join('OR', $or_query);
+                            $sql_query_conditions[] = join('OR', $or_query);
                         } else {
-                            $conditions_query[] = "datascope LIKE ?";
-                            $conditions_param[] = $value . '%';
+                            $sql_query_conditions[] = "datascope LIKE ?";
+                            $sql_query_params[] = $value . '%';
                         }
 
                         continue;
@@ -191,29 +189,29 @@ trait VnBiz_sql
 
                     if (is_array($value)) {
                         if (isset($value[0])) {
-                            $conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
-                            array_push($conditions_param, ...$value);
+                            $sql_query_conditions[] = "$field_name IN (" . R::genSlots($value) . ")";
+                            array_push($sql_query_params, ...$value);
                         } else {
                             if (array_key_exists('$gt', $value)) {
-                                $conditions_query[] = "$field_name > ?";
-                                $conditions_param[] = $value['$gt'];
+                                $sql_query_conditions[] = "$field_name > ?";
+                                $sql_query_params[] = $value['$gt'];
                             }
                             if (array_key_exists('$gte', $value)) {
-                                $conditions_query[] = "$field_name >= ?";
-                                $conditions_param[] = $value['$gte'];
+                                $sql_query_conditions[] = "$field_name >= ?";
+                                $sql_query_params[] = $value['$gte'];
                             }
                             if (array_key_exists('$lt', $value)) {
-                                $conditions_query[] = "$field_name < ?";
-                                $conditions_param[] = $value['$lt'];
+                                $sql_query_conditions[] = "$field_name < ?";
+                                $sql_query_params[] = $value['$lt'];
                             }
                             if (array_key_exists('$lte', $value)) {
-                                $conditions_query[] = "$field_name <= ?";
-                                $conditions_param[] = $value['$lte'];
+                                $sql_query_conditions[] = "$field_name <= ?";
+                                $sql_query_params[] = $value['$lte'];
                             }
                         }
                     } else {
-                        $conditions_query[] = "$field_name=?";
-                        $conditions_param[] = $value;
+                        $sql_query_conditions[] = "$field_name=?";
+                        $sql_query_params[] = $value;
                     }
                 }
 
@@ -227,18 +225,18 @@ trait VnBiz_sql
             $skip_db_actions ?: $this->actions()->do_action("db_before_find_$model_name", $context);
 
             $context['db_context'] = [
-                'conditions_query' => &$conditions_query,
-                'conditions_param' => &$conditions_param
+                'sql_query_conditions' => &$sql_query_conditions,
+                'sql_query_params' => &$sql_query_params
             ];
 
             vnbiz_do_action("db_before_find_exe_$model_name", $context);
             unset($context['db_context']);
 
-            $conditions_query = join(' AND ', $conditions_query);
+            $sql_query_conditions = join(' AND ', $sql_query_conditions);
 
-            $sql_query = $conditions_query . $order_query . ' LIMIT ? OFFSET ?';
+            $sql_query = $sql_query_conditions . $order_query . ' LIMIT ? OFFSET ?';
 
-            $sql_params = array_merge($conditions_param, [$limit, $offset]);
+            $sql_params = array_merge($sql_query_params, [$limit, $offset]);
 
             if (isset($context['debug']) && $context['debug']) {
                 if (!is_array($context['debug'])) {
@@ -319,7 +317,7 @@ trait VnBiz_sql
             }
 
             if ($count) {
-                $number_of_rows = R::count($model_name, $conditions_query, $conditions_param);
+                $number_of_rows = R::count($model_name, $sql_query_conditions, $sql_query_params);
                 $context['meta']['count'] = $number_of_rows;
             }
 
@@ -347,18 +345,18 @@ trait VnBiz_sql
 
             $model_name = $context['model_name'];
             $filter = $context['filter'];
-            $conditions_query = [];
-            $conditions_param = [];
+            $sql_query_conditions = [];
+            $sql_query_params = [];
 
             $field_names = vnbiz_get_model_field_names($model_name);
             foreach ($field_names as $field_name) {
                 if (isset($filter[$field_name])) {
-                    $conditions_query[] = "$field_name=?";
-                    $conditions_param[] = $filter[$field_name];
+                    $sql_query_conditions[] = "$field_name=?";
+                    $sql_query_params[] = $filter[$field_name];
                 }
             }
 
-            $conditions_query = join(' AND ', $conditions_query) . ' LIMIT 1';
+            $sql_query_conditions = join(' AND ', $sql_query_conditions) . ' LIMIT 1';
 
             $in_trans = vnbiz_get_key($context, 'in_trans', false);
             if (!$in_trans) {
@@ -367,7 +365,7 @@ trait VnBiz_sql
 
             !$in_trans && R::begin();
             try {
-                $rows = R::find($model_name, $conditions_query, $conditions_param);
+                $rows = R::find($model_name, $sql_query_conditions, $sql_query_params);
 
                 if (sizeof($rows) == 0) {
                     throw new VnBizError('Model do not exist', 'model_not_found');
@@ -413,8 +411,8 @@ trait VnBiz_sql
             $filter = vnbiz_get_var($context['filter'], []);
 
             $text_search = vnbiz_get_var($meta['text_search'], null);
-            $conditions_query = [];
-            $conditions_param = [];
+            $sql_query_conditions = [];
+            $sql_query_params = [];
 
             $schema = $this->models[$model_name]->schema();
 
@@ -425,8 +423,8 @@ trait VnBiz_sql
                 $fields = join(',', $fields);
                 $text_condition = "MATCH (" . $fields . ') AGAINST(?)';
 
-                $conditions_query[] = $text_condition;
-                $conditions_param[] = $text_search;
+                $sql_query_conditions[] = $text_condition;
+                $sql_query_params[] = $text_search;
             }
 
             $field_names = vnbiz_get_model_field_names($model_name);
@@ -440,13 +438,13 @@ trait VnBiz_sql
                             if (isset($value[0])) {
                                 foreach ($value as $datascope) {
                                     $or_query[] = "(datascope LIKE ?)";
-                                    $conditions_param[] = $datascope . '%';
+                                    $sql_query_params[] = $datascope . '%';
                                 }
                             }
-                            $conditions_query[] = join('OR', $or_query);
+                            $sql_query_conditions[] = join('OR', $or_query);
                         } else {
-                            $conditions_query[] = "datascope LIKE ?";
-                            $conditions_param[] = $value . '%';
+                            $sql_query_conditions[] = "datascope LIKE ?";
+                            $sql_query_params[] = $value . '%';
                         }
 
                         continue;
@@ -454,29 +452,29 @@ trait VnBiz_sql
 
                     if (is_array($value)) {
                         if (isset($value[0])) {
-                            $conditions_query[] = "$field_name IN (" . R::genSlots($value) . ")";
-                            array_push($conditions_param, ...$value);
+                            $sql_query_conditions[] = "$field_name IN (" . R::genSlots($value) . ")";
+                            array_push($sql_query_params, ...$value);
                         } else {
                             if (array_key_exists('$gt', $value)) {
-                                $conditions_query[] = "$field_name > ?";
-                                $conditions_param[] = $value['$gt'];
+                                $sql_query_conditions[] = "$field_name > ?";
+                                $sql_query_params[] = $value['$gt'];
                             }
                             if (array_key_exists('$gte', $value)) {
-                                $conditions_query[] = "$field_name >= ?";
-                                $conditions_param[] = $value['$gte'];
+                                $sql_query_conditions[] = "$field_name >= ?";
+                                $sql_query_params[] = $value['$gte'];
                             }
                             if (array_key_exists('$lt', $value)) {
-                                $conditions_query[] = "$field_name < ?";
-                                $conditions_param[] = $value['$lt'];
+                                $sql_query_conditions[] = "$field_name < ?";
+                                $sql_query_params[] = $value['$lt'];
                             }
                             if (array_key_exists('$lte', $value)) {
-                                $conditions_query[] = "$field_name <= ?";
-                                $conditions_param[] = $value['$lte'];
+                                $sql_query_conditions[] = "$field_name <= ?";
+                                $sql_query_params[] = $value['$lte'];
                             }
                         }
                     } else {
-                        $conditions_query[] = "$field_name=?";
-                        $conditions_param[] = $value;
+                        $sql_query_conditions[] = "$field_name=?";
+                        $sql_query_params[] = $value;
                     }
                 }
 
@@ -489,14 +487,14 @@ trait VnBiz_sql
 
 
             $context['db_context'] = [
-                'conditions_query' => &$conditions_query,
-                'conditions_param' => &$conditions_param
+                'sql_query_conditions' => &$sql_query_conditions,
+                'sql_query_params' => &$sql_query_params
             ];
 
             vnbiz_do_action("db_before_count_exe_$model_name", $context);
             unset($context['db_context']);
 
-            $conditions_query = join(' AND ', $conditions_query);
+            $sql_query_conditions = join(' AND ', $sql_query_conditions);
 
             $this->actions()->do_action("db_before_count_$model_name", $context);
 
@@ -505,10 +503,10 @@ trait VnBiz_sql
                     $context['debug'] = [];
                 }
                 $context['debug'][] = $context;
-                $context['debug'][] = ['sql', $model_name, $conditions_query, $conditions_param];
+                $context['debug'][] = ['sql', $model_name, $sql_query_conditions, $sql_query_params];
             }
 
-            $context['count'] = R::count($model_name, $conditions_query, $conditions_param);
+            $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
 
             $this->actions()->do_action("db_after_count_$model_name", $context);
 
@@ -516,6 +514,20 @@ trait VnBiz_sql
         });
     }
 
+    public function add_action_model_sql_filter() {
+        vnbiz_add_action('db_before_find_exe', function (&$context) {
+            $db_context = vnbiz_get_var($context['db_context'], []);
+            $sql_query_conditions = vnbiz_get_var($db_context['sql_query_conditions'], []);
+            $sql_query_params = vnbiz_get_var($db_context['sql_query_params'], []);
+
+            $sql_query = $sql_query_conditions . ' LIMIT ? OFFSET ?';
+
+            $sql_params = array_merge($sql_query_params, [$limit, $offset]);
+
+            $context['sql_query'] = $sql_query;
+            $context['sql_params'] = $sql_params;
+        });
+    }
 
     public function init_db_mysql($servername = 'localhost', $username = "", $password = "", $dbname = '')
     {
@@ -527,6 +539,7 @@ trait VnBiz_sql
         $this->add_action_model_find();
         $this->add_action_model_delete();
         $this->add_action_model_count();
+        $this->add_action_model_sql_filter();
 
         return $this;
     }

@@ -480,8 +480,8 @@ class Model
 				$tags = $context['filter']['@tags'];
 			}
 			if (sizeof($tags) > 0) {
-				$query = &$db_context['conditions_query'];
-				$param = &$db_context['conditions_param'];
+				$query = &$db_context['sql_query_conditions'];
+				$param = &$db_context['sql_query_params'];
 				$query[] = "(id IN (SELECT mt.model_id FROM modeltag mt INNER JOIN tag t ON t.id=mt.tag_id AND mt.model_name=? AND t.name IN (" . R::genSlots($tags) . ") GROUP BY mt.model_id HAVING COUNT(t.id)=? ))";
 				$param[] = $model_name;
 				array_push($param, ...$tags);

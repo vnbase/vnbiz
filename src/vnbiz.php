@@ -17,25 +17,26 @@ include __DIR__ . '/base/hashids/src/Hashids.php';
 include __DIR__ . '/core/vnbiz_functions.php';
 include __DIR__ . '/core/VnbizImage.php';
 
-include __DIR__ . '/modules/systemconfig.php';
+include __DIR__ . '/modules/datascope.php';
+include __DIR__ . '/modules/s3.php';
+include __DIR__ . '/modules/redis.php';
+include __DIR__ . '/modules/sql.php';
 include __DIR__ . '/modules/user.php';
 include __DIR__ . '/modules/usermark.php';
+include __DIR__ . '/modules/template.php';
+include __DIR__ . '/modules/email.php';
+include __DIR__ . '/modules/notification.php';
+
+include __DIR__ . '/modules/oauth.php';
+include __DIR__ . '/modules/systemconfig.php';
+include __DIR__ . '/modules/useractivity.php';
 include __DIR__ . '/modules/tag.php';
 include __DIR__ . '/modules/comment.php';
 include __DIR__ . '/modules/review.php';
-include __DIR__ . '/modules/sql.php';
 include __DIR__ . '/modules/history.php';
-include __DIR__ . '/modules/s3.php';
-include __DIR__ . '/modules/template.php';
-include __DIR__ . '/modules/email.php';
 include __DIR__ . '/modules/jsonschema.php';
 include __DIR__ . '/modules/typescriptschema.php';
-include __DIR__ . '/modules/oauth.php';
-include __DIR__ . '/modules/notification.php';
-include __DIR__ . '/modules/redis.php';
 include __DIR__ . '/modules/monitor.php';
-include __DIR__ . '/modules/useractivity.php';
-include __DIR__ . '/modules/datascope.php';
 
 include __DIR__ . '/core/Schema.php';
 include __DIR__ . '/core/Model_event.php';
