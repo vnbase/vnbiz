@@ -2,6 +2,7 @@
 
 namespace VnBiz;
 
+use Error;
 use R;
 
 class Model
@@ -38,22 +39,29 @@ class Model
 			$context['model']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_update(function (&$context) {
-			$context['filter'] = $context['filter'] ?? [];
+			if (!isset($context['filter'])) {
+				$context['filter'] = [];
+			}
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_find(function (&$context) {
-			$context['filter'] = $context['filter'] ?? [];
+			if (!isset($context['filter'])) {
+				$context['filter'] = [];
+			}
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_count(function (&$context) {
-			$context['filter'] = $context['filter'] ?? [];
+			if (!isset($context['filter'])) {
+				$context['filter'] = [];
+			}
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
 		$this->db_before_delete(function (&$context) {
-			$context['filter'] = $context['filter'] ?? [];
+			if (!isset($context['filter'])) {
+				$context['filter'] = [];
+			}
 			$context['filter']['ns'] = vnbiz_namespace_id();
 		});
-		
 	}
 
 	public function schema()
@@ -700,19 +708,29 @@ class Model
 		}
 
 		$func_validate_bool = function (&$context) use ($field_names) {
-			$model = &$context['model'];
+			if (isset($context['model'])) {
+				$model = &$context['model'];
 
-			foreach ($field_names as $field_name) {
-				if (isset($model[$field_name])) {
-					$value = $model[$field_name];
-					if (isset($model[$field_name]) && !is_bool($value)) {
-						if (is_string($value)) {
-							$model[$field_name] = $value === 'true' || $value === 'TRUE' || $value === '1';
-						} else if (is_numeric($value)) {
-							$model[$field_name] = $value != 0;
-						} else {
-							throw new VnBizError("$field_name must be bool", 'invalid_model');
+				foreach ($field_names as $field_name) {
+					if (isset($model[$field_name])) {
+						$value = $model[$field_name];
+						if (isset($model[$field_name]) && !is_bool($value)) {
+							if (is_string($value)) {
+								$model[$field_name] = $value == 'true' || $value == 'TRUE' || $value === '1';
+							} else if (is_numeric($value)) {
+								$model[$field_name] = $value != 0;
+							} else {
+								throw new VnBizError("$field_name must be bool", 'invalid_model');
+							}
 						}
+					}
+				}
+			}
+
+			if (isset($context['filter'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['filter'][$field_name])) {
+						$context['filter'][$field_name] = (bool)$context['filter'][$field_name];
 					}
 				}
 			}
@@ -720,6 +738,40 @@ class Model
 
 		$this->db_before_create($func_validate_bool);
 		$this->db_before_update($func_validate_bool);
+		$this->db_before_delete($func_validate_bool);
+		$this->web_before_create($func_validate_bool);
+		$this->web_before_update($func_validate_bool);
+		$this->web_before_delete($func_validate_bool);
+
+
+		$func_convert_bool = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				foreach ($context['models'] as &$model) {
+					foreach ($field_names as $field_name) {
+						if (isset($model[$field_name])) {
+							$model[$field_name] = (bool)$model[$field_name];
+						}
+					}
+				}
+			}
+			if (isset($context['model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['model'][$field_name])) {
+						$context['model'][$field_name] = (bool)$context['model'][$field_name];
+					}
+				}
+			}
+			if (isset($context['old_model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['old_model'][$field_name])) {
+						$context['old_model'][$field_name] = (bool)$context['old_model'][$field_name];
+					}
+				}
+			}
+		};
+		$this->db_after_find($func_convert_bool);
+		$this->db_after_update($func_convert_bool);
+		$this->db_after_delete($func_convert_bool);
 
 		return $this;
 	}
@@ -971,6 +1023,38 @@ class Model
 		$this->db_before_create($func_validate_int);
 		$this->db_before_update($func_validate_int);
 
+
+		$func_alter = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				$models = &$context['models'];
+				foreach ($field_names as $field_name) {
+					foreach ($models as &$model) {
+						if (is_string($model[$field_name])) {
+							$model[$field_name] = intval($model[$field_name]);
+						}
+					}
+				}
+			}
+			if (isset($context['old_model'])) {
+				$model = &$context['old_model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
+				}
+			}
+			if (isset($context['model'])) {
+				$model = &$context['model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
+				}
+			}
+		};
+		$this->db_after_find($func_alter);
+		$this->db_after_update($func_alter);
+		$this->db_after_delete($func_alter);
 		return $this;
 	}
 
@@ -1007,6 +1091,39 @@ class Model
 		$this->db_before_create($func_validate_int);
 		$this->db_before_update($func_validate_int);
 
+
+		$func_alter = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				$models = &$context['models'];
+				foreach ($field_names as $field_name) {
+					foreach ($models as &$model) {
+						if (is_string($model[$field_name])) {
+							$model[$field_name] = intval($model[$field_name]);
+						}
+					}
+				}
+			}
+			if (isset($context['old_model'])) {
+				$model = &$context['old_model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
+				}
+			}
+			if (isset($context['model'])) {
+				$model = &$context['model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
+				}
+			}
+		};
+		$this->db_after_find($func_alter);
+		$this->db_after_update($func_alter);
+		$this->db_after_delete($func_alter);
+
 		return $this;
 	}
 
@@ -1024,14 +1141,58 @@ class Model
 			$model = &$context['model'];
 
 			foreach ($field_names as $field_name) {
-				if (isset($model[$field_name]) && !is_numeric($$model[$field_name])) {
-					throw new VnBizError("$field_name must be float", 'invalid_model');
+				if (isset($model[$field_name])) {
+					if (!is_numeric($model[$field_name])) {
+						throw new VnBizError("$field_name must be float", 'invalid_model', [
+							$field_name => 'Must be a number. but ' . $model[$field_name] . ' is provided.'
+						]);
+					}
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = floatval($model[$field_name]);
+					}
 				}
 			}
 		};
 
 		$this->db_before_create($func_validate_float);
 		$this->db_before_update($func_validate_float);
+		$this->web_before_create($func_validate_float);
+		$this->web_before_update($func_validate_float);
+
+		//convert to double after create, update, find, delete
+		$func_alter_float = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				$models = &$context['models'];
+				foreach ($models as &$model) {
+					foreach ($field_names as $field_name) {
+						if (is_string($model[$field_name])) {
+							$model[$field_name] = floatval($model[$field_name]);
+						}
+					}
+				}
+			}
+
+			if (isset($context['old_model'])) {
+				$model = &$context['old_model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = floatval($model[$field_name]);
+					}
+				}
+			}
+
+			if (isset($context['model'])) {
+				$model = &$context['model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = floatval($model[$field_name]);
+					}
+				}
+			}
+		};
+		$this->db_after_find($func_alter_float);
+		$this->db_after_update($func_alter_float);
+		$this->db_after_delete($func_alter_float);
 
 		return $this;
 	}
@@ -1131,40 +1292,72 @@ class Model
 
 		//TODO: validate datetime
 
-		$func_validate_datetime = function (&$context) use ($field_name) {
+		$func_validate_datetime = function (&$context) use ($field_names) {
 			$model = &$context['model'];
 
-			if (isset($model[$field_name])) {
-				$value = $model[$field_name];
-				if (is_string($value)) {
-					// $date_time = new DateTime($value, new DateTimeZone('UTC') );
-					// $model[$field_name] = $date_time->getTimestamp();
-					if (preg_match("/^[0-9]*$/i", $value)) {
-					} else {
-						$time = new \DateTime($value, new \DateTimeZone('UTC'));
-						$model[$field_name] = (int)$time->format('Uv');
+			foreach ($field_names as $field_name) {
+				if (isset($model[$field_name])) {
+					$value = $model[$field_name];
+					if (!is_int($value)) {
+						if (is_string($value) && preg_match("/^[0-9]*$/i", $value)) {
+							$model[$field_name] = intval($value);
+
+							// $date_time = new DateTime($value, new DateTimeZone('UTC') );
+							// $model[$field_name] = $date_time->getTimestamp();
+							// if (preg_match("/^[0-9]*$/i", $value)) {
+							// } else {
+							// 	$time = new \DateTime($value, new \DateTimeZone('UTC'));
+							// 	$model[$field_name] = (int)$time->format('Uv');
+							// }
+							// ;	
+						} else {
+							throw new VnBizError("$field_name must be datetime<int>", 'invalid_model', [
+								$field_name => 'Must be a datetime.'
+							]);
+						}
 					}
-					// ;	
+				} else {
+					$model[$field_name] = NULL;
 				}
-			} else {
-				$model[$field_name] = NULL;
 			}
 		};
 
+		$this->web_before_create($func_validate_datetime);
+		$this->web_before_update($func_validate_datetime);
 		$this->db_before_create($func_validate_datetime);
 		$this->db_before_update($func_validate_datetime);
 
-		$func_alter_datetime = function (&$context) use ($field_name) {
-			$models = &$context['models'];
-
-			foreach ($models as &$model) {
-				if (is_string($model[$field_name])) {
-					$model[$field_name] = intval($model[$field_name]);
+		$func_alter_datetime = function (&$context) use ($field_names) {
+			if (isset($context['models'])) {
+				$models = &$context['models'];
+				foreach ($field_names as $field_name) {
+					foreach ($models as &$model) {
+						if (is_string($model[$field_name])) {
+							$model[$field_name] = intval($model[$field_name]);
+						}
+					}
+				}
+			}
+			if (isset($context['old_model'])) {
+				$model = &$context['old_model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
+				}
+			}
+			if (isset($context['model'])) {
+				$model = &$context['model'];
+				foreach ($field_names as $field_name) {
+					if (is_string($model[$field_name])) {
+						$model[$field_name] = intval($model[$field_name]);
+					}
 				}
 			}
 		};
-
 		$this->db_after_find($func_alter_datetime);
+		$this->db_after_update($func_alter_datetime);
+		$this->db_after_delete($func_alter_datetime);
 
 		return $this;
 	}
@@ -1266,6 +1459,13 @@ class Model
 		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name) {
 			if (isset($context['model']) && isset($context['model'][$field_name])) {
 				$ref_id = $context['model'][$field_name];
+
+
+
+				if ($ref_id === '') {
+					unset($context['model'][$field_name]);
+					return;
+				}
 
 				$find_context = [
 					'action' => "model_find", // when we support model count, we ultize.
@@ -1444,10 +1644,7 @@ class Model
 	function author()
 	{
 
-		$this->ref('created_by', 'user');
-		$this->ref('updated_by', 'user');
-		$this->web_readonly('created_by', 'updated_by');
-
+		//remove all author fields if exists. definition must be after;
 		$func_set_create_author = function (&$context) {
 			unset($context['model']['updated_by']);
 
@@ -1471,13 +1668,17 @@ class Model
 
 		$this->db_before_update($func_set_update_author);
 
+		$this->ref('created_by', 'user');
+		$this->ref('updated_by', 'user');
+
+		$this->web_readonly('created_by', 'updated_by');
+
 		return $this;
 	}
 
 	function password()
 	{
 		$field_names = func_get_args();
-		$model_name = $this->schema->model_name();
 
 		foreach ($field_names as $field_name) {
 			vnbiz_assure_valid_name($field_name);
@@ -1486,7 +1687,7 @@ class Model
 		}
 
 		$func_hash_password = function (&$context) use ($field_names) {
-			unset($context['model']['updated_by']);
+			// unset($context['model']['updated_by']);
 
 			foreach ($field_names as $field_name) {
 				if (isset($context['model'][$field_name])) {
@@ -1498,20 +1699,44 @@ class Model
 			}
 		};
 
-		$this->db_before_create($func_hash_password);
-		$this->db_before_update($func_hash_password);
+		//careful: _begin_
+		$this->db_begin_create($func_hash_password);
+		$this->db_begin_update($func_hash_password);
 
 		$func_unset_password = function (&$context) use ($field_names) {
-			foreach ($context['models'] as &$model) {
+			if (isset($context['models'])) {
 				foreach ($field_names as $field_name) {
-					if (isset($model[$field_name])) {
-						unset($model[$field_name]);
+					foreach ($context['models'] as &$model) {
+						if (isset($model[$field_name])) {
+							$context['model'][$field_name] =  substr($context['model'][$field_name], -6);
+						}
+					}
+				}
+			}
+
+			// remove password in model, old model
+			if (isset($context['model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['model'][$field_name])) {
+						// last 6 characters;
+						$context['model'][$field_name] =  substr($context['model'][$field_name], -6);
+					}
+				}
+			}
+
+			if (isset($context['old_model'])) {
+				foreach ($field_names as $field_name) {
+					if (isset($context['old_model'][$field_name])) {
+						$context['old_model'][$field_name] = substr($context['old_model'][$field_name], -6);
 					}
 				}
 			}
 		};
 
 		$this->web_after_find($func_unset_password);
+		$this->web_after_create($func_unset_password);
+		$this->web_after_update($func_unset_password);
+		$this->web_after_delete($func_unset_password);
 
 		return $this;
 	}

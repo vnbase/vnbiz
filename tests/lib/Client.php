@@ -17,7 +17,7 @@ class Client
      */
     public function REQUEST($formData, $headers = [], $url = 'http://localhost:6666/test/')
     {
-        $url = 'http://localhost:6666/test/?debug=true&ns=' . vnbiz_encrypt_id(18);
+        $url = 'http://localhost:6666/test/?debug=true&ns=' . vnbiz_encrypt_id(28);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
@@ -122,6 +122,17 @@ class Client
         }
         foreach ($model as $key => $value) {
             $payload["model[$key]"] = $value;
+        }
+        return $this->REQUEST($payload);
+    }
+    public function model_delete($model_name, $filter)
+    {
+        $payload = [
+            'action' => 'model_delete',
+            'model_name' => $model_name
+        ];
+        foreach ($filter as $key => $value) {
+            $payload["filter[$key]"] = $value;
         }
         return $this->REQUEST($payload);
     }

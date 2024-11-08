@@ -72,6 +72,7 @@ function vnbiz_html($text)
 }
 
 global $VNBIZ_HASH_ID_INSTANCE;
+//secure this
 $VNBIZ_HASH_ID_INSTANCE = new \Hashids\Hashids('VnBizS3cr3t',  10, 'abcdefghijklmnopqrstuvwxyz');
 function vnbiz_encrypt_id($id)
 {
@@ -84,6 +85,10 @@ function vnbiz_encrypt_id($id)
 function vnbiz_encrypt_ids($ids)
 {
     global $VNBIZ_HASH_ID_INSTANCE;
+    if ($ids == null) {
+        return null;
+    }
+
     if (is_array($ids)) {
         $arr = [];
         foreach ($ids as $id) {
@@ -100,6 +105,9 @@ function vnbiz_encrypt_ids($ids)
 function vnbiz_decrypt_id($id)
 {
     global $VNBIZ_HASH_ID_INSTANCE;
+    if ($id == null) {
+        return null;
+    }
     if (is_numeric($id)) {
         return $id;
     }
