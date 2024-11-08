@@ -1501,9 +1501,15 @@ class Model
 			}
 		});
 		$this->db_before_update(function (&$context) use ($field_name, $ref_model_name) {
-			if (isset($context['model']) && isset($context['model'][$field_name]) && $context['model'][$field_name] != $context['old_model'][$field_name]) {
-				$context['ref_field_name'] = $field_name;
-				vnbiz_do_action("model_new_ref_$ref_model_name", $context);
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				//$context['model'][$field_name] != $context['old_model'][$field_name]
+				if (isset($context['old_model']) && isset($context['old_model'][$field_name]) && $context['old_model'][$field_name] != $context['model'][$field_name]) {
+					$context['ref_field_name'] = $field_name;
+					vnbiz_do_action("model_new_ref_$ref_model_name", $context);
+				}
+				
+				// $context['ref_field_name'] = $field_name;
+				// vnbiz_do_action("model_new_ref_$ref_model_name", $context);
 			}
 		});
 
