@@ -85,21 +85,28 @@ function vnbiz_user_issue_tokens(&$user, &$context)
     $context['error'] = null;
     $context['models'] = [$user];
 
-    $expire_in = 900; //15 minutes
-    $context['refresh_token'] = vnbiz_token_sign([
+    $refresh_payload = [
         'typ' => 'refresh',
         'sub' => vnbiz_encrypt_id($user['id']),
-        'pas' => vnbiz_user_get_public_hashed_password($user),
-        'ns' => vnbiz_namespace_id()
-    ], VNBIZ_TOKEN_SECRET);
+        'pas' => vnbiz_user_get_public_hashed_password($user)
+    ];
+    if (vnbiz_module_namespace_enabled()) {
+        $refresh_payload['ns'] = vnbiz_namespace_id();
+    }
 
-    $context['access_token'] = vnbiz_token_sign([
+    $expire_in = 900; //15 minutes
+    $context['refresh_token'] = vnbiz_token_sign($refresh_payload, VNBIZ_TOKEN_SECRET);
+
+    $access_payload = [
         'typ' => 'access',
         'sub' => vnbiz_encrypt_id($user['id']),
         'per' => $permissions,
-        'per_s' => $permission_scope,
-        'ns' => vnbiz_namespace_id()
-    ], VNBIZ_TOKEN_SECRET, time() + $expire_in);
+        'per_s' => $permission_scope
+    ];
+    if (vnbiz_module_namespace_enabled()) {
+        $access_payload['ns'] = vnbiz_namespace_id();
+    }
+    $context['access_token'] = vnbiz_token_sign($access_payload, VNBIZ_TOKEN_SECRET, time() + $expire_in);
 
     $context['token_type'] = 'Bearer';
     $context['expires_in'] = $expire_in;
@@ -266,7 +273,7 @@ function vnbiz_init_module_user()
                 $user = vnbiz_model_find_one('user', [
                     'email' => $username  //find by email
                 ]);
-            } 
+            }
             if (!$user) {
                 $user = vnbiz_model_find_one('user', [
                     'phone' => $username  //find by phone

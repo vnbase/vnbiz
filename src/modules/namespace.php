@@ -7,3 +7,8 @@ function vnbiz_init_module_namespace()
         ->field('description', 'text')
     ;
 }
+
+
+function vnbiz_module_namespace_enabled() {
+    return isset($GLOBALS['vnbiz_namespace_id']);
+}
