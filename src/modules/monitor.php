@@ -31,6 +31,13 @@ function vnbiz_monitor_request() {
 }
 function vnbiz_monitor()
 {
+    /**
+     * Redis info
+     */
+    $number_of_keys = vnbiz_redis()->dbSize();
+
+
+
     $load = sys_getloadavg()[0];
     $hostname = gethostname();
     $totalMemoryMB = '';
@@ -104,6 +111,10 @@ function vnbiz_monitor()
             <tr>
                 <td>peakMemoryUsageMB</td>
                 <td class="vnbiz-value"><?php echo $peakMemoryUsageMB; ?></td>
+            </tr>
+            <tr>
+                <td>Redis[Number Of Keys]</td>
+                <td class="vnbiz-value"><?php echo $number_of_keys; ?></td>
             </tr>
         </tbody>
     </table>
