@@ -311,6 +311,10 @@ trait VnBiz_sql
             $ref = vnbiz_get_var($meta['ref'], false);
             $count = vnbiz_get_var($meta['count'], false);
 
+            if ($limit > 1000) {
+                throw new VnBizError('Limit too large', 'unsupported');
+            }
+
             $sql_query_conditions = join(' AND ', $sql_query_conditions);
 
             $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ? ' . $lock_query;

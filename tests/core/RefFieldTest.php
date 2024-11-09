@@ -35,10 +35,10 @@ final class RefFieldTest extends TestCase
             'password_1' => '222222'
         ]);
 
-        echo "modela_a id: " . vnbiz_decrypt_id($modela_1['id']) . "\n";
-        echo "modela_b id: " . vnbiz_decrypt_id($modela_2['id']) . "\n";
-        echo "modelb_1 id: " . vnbiz_decrypt_id($modelb_1['id']) . "\n";
-        echo "modelb_2 id: " . vnbiz_decrypt_id($modelb_2['id']) . "\n";
+        // echo "modela_a id: " . vnbiz_decrypt_id($modela_1['id']) . "\n";
+        // echo "modela_b id: " . vnbiz_decrypt_id($modela_2['id']) . "\n";
+        // echo "modelb_1 id: " . vnbiz_decrypt_id($modelb_1['id']) . "\n";
+        // echo "modelb_2 id: " . vnbiz_decrypt_id($modelb_2['id']) . "\n";
 
 
         [$status, $body] = $client->model_find('testrefa', [
@@ -73,16 +73,16 @@ final class RefFieldTest extends TestCase
         ]);
         $this->assertEquals($status, 200);
         $model = $body['models'][0];
-        
+
         $this->assertEquals(1, $model['testrefb_count'], 'has one testrefb');
-        
+
         // modela_2 should have 1 testrefb
         [$status, $body] = $client->model_find('testrefa', [
             'id' => $modela_2['id']
         ]);
         $this->assertEquals($status, 200);
         $model = $body['models'][0];
-        
+
         $this->assertEquals(1, $model['testrefb_count'], 'has one testrefb');
 
         // delete modelb_2
@@ -93,7 +93,41 @@ final class RefFieldTest extends TestCase
         ]);
         $this->assertEquals($status, 200);
         $model = $body['models'][0];
-        
+
         $this->assertEquals(0, $model['testrefb_count'], 'has one testrefb');
+    }
+
+    public function test_ref_model_also_be_cropted()
+    {
+        $client = new Client();
+
+        $modela_1 = $client->model_create_get('testrefa', [
+            'string_1' => 'modela_1',
+            'password_1' => '0000000'
+        ]);
+
+        $modela_2 = $client->model_create_get('testrefa', [
+            'string_1' => 'modela_2',
+            'parent_id' => $modela_1['id']
+        ]);
+
+        $modelb_1 = $client->model_create_get('testrefb', [
+            'string_1' => 'active',
+            'testrefa_id' => $modela_1['id'],
+            'password_1' => '1111111'
+        ]);
+
+        [$status, $body] = $client->model_find('testrefb', [
+            'id' => $modelb_1['id']
+        ], [
+            'ref' => true
+        ]);
+
+        $this->assertEquals($status, 200);
+        $model = $body['models'][0];
+        $this->assertTrue(strlen($model['password_1']) < 10, 'password_1 is hidden');
+
+        $modela = $model['@testrefa_id'];
+        $this->assertTrue(strlen($modela['password_1']) < 10, 'ref\'s password_1 is hidden');
     }
 }
