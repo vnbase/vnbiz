@@ -32,6 +32,7 @@ class Model
 	private function has_ns()
 	{
 		$this->schema->add_field('ns', 'namespace', 0);
+		$this->no_update('ns');
 		$this->web_secure_id('ns');
 
 		$this->db_before_create(function (&$context) {
@@ -1658,30 +1659,30 @@ class Model
 				$old_id = $context['old_model'][$ref_field_name];
 			}
 
-			// on ref with: filter is empty or updated-model contains filter's fields
-			$has_ref_id = $id !== null;
-			$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
-
-			//($has_ref_id && $id !== $old_id) = changed ref_id from one to another.
-			if (($has_ref_id && $updated_model_contains_filter) || ($has_ref_id && $id !== $old_id)) {
-				// update count
-				$count_filter = array_merge($filter, [$ref_field_name => $id]);
-				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
-				try {
-					vnbiz_model_update($model_name, [
-						'id' => $id
-					], [
-						$field_name => $count
-					], [
-						'skip_db_actions' => true
-					], true);
-				} catch (\Exception $e) {
-					throw $e;
-				}
-			} else {
+			if (isset($context['model'])) {
+				// on ref with: filter is empty or updated-model contains filter's fields
+				$has_ref_id = $id !== null;
 				$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
-				echo "Skikp ref: $has_ref_id  recount updated model $updated_model_contains_filter  KKKK\n";
-				var_dump($context['model'], array_keys($filter));
+
+				//($has_ref_id && $id !== $old_id) = changed ref_id from one to another.
+				if (($has_ref_id && $updated_model_contains_filter) || ($has_ref_id && $id !== $old_id)) {
+					// update count
+					$count_filter = array_merge($filter, [$ref_field_name => $id]);
+					$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
+					try {
+						vnbiz_model_update($model_name, [
+							'id' => $id
+						], [
+							$field_name => $count
+						], [
+							'skip_db_actions' => true
+						], true);
+					} catch (\Exception $e) {
+						throw $e;
+					}
+				} else {
+					$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
+				}
 			}
 
 			// $old_model[id] == $model[id] => no need to recount (counted in update)

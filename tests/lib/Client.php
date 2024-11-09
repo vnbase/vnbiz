@@ -26,12 +26,12 @@ class Client
     {
         $code = isset($body['code']) ? $body['code'] : '[code]';
         $message = isset($body['message']) ? $body['message'] : '[message]';
-        $models = isset($body['models']) ? json_encode($body['models'], JSON_PRETTY_PRINT) : '[models]';
-        $model = isset($body['model']) ? json_encode($body['model'], JSON_PRETTY_PRINT) : '[model]';
-        $filter = isset($body['filter']) ? json_encode($body['filter'], JSON_PRETTY_PRINT) : '[filter]';
-        $old_model = isset($body['old_model']) ? json_encode($body['old_model'], JSON_PRETTY_PRINT) : '[old_model]';
+        $models = isset($body['models']) ? json_encode($body['models'], JSON_PRETTY_PRINT) : '';
+        $model = isset($body['model']) ? json_encode($body['model'], JSON_PRETTY_PRINT) : '';
+        $filter = isset($body['filter']) ? json_encode($body['filter'], JSON_PRETTY_PRINT) : '';
+        $old_model = isset($body['old_model']) ? json_encode($body['old_model'], JSON_PRETTY_PRINT) : '';
 
-        print_r(">>> $code, $message, $model,  $models, $old_model, $filter \n");
+        print_r(">>> $code, message:$message, model:$model,  models:$models, old_model:$old_model, filter:$filter \n");
         if ($code !== 'success') {
             $error = isset($body['error']) ? $body['error'] : '[error]';
             $stack = isset($body['stack']) ? $body['stack'] : '[stack]';
@@ -47,7 +47,7 @@ class Client
      */
     public function REQUEST($formData, $headers = [], $url = 'http://localhost:8888/test/')
     {
-        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(54);
+        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(66);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;

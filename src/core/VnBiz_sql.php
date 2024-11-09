@@ -116,9 +116,15 @@ trait VnBiz_sql
                 if (sizeof($rows) == 0) {
                     throw new VnBizError('Model do not exist', 'model_not_found');
                 }
+
                 $old_model = $rows[0];
                 $context['old_model'] = $old_model;
                 $context['old_model']['@model_name'] = $model_name;
+
+                $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+                vnbiz_redis_del($cached_key);
 
                 $skip_db_actions ?: $this->actions()->do_action("db_before_update_$model_name", $context);
 
@@ -282,6 +288,101 @@ trait VnBiz_sql
         });
     }
 
+    public function db_fetch(&$context)
+    {
+        $model_name = $context['model_name'];
+        $meta = vnbiz_get_var($context['meta'], []);
+        $sql_query_conditions = &$context['sql_query_conditions'];
+        $sql_query_params = &$context['sql_query_params'];
+        $sql_query_order = vnbiz_get_var($context['sql_query_order'], '');
+        $lock_query = vnbiz_get_var($context['sql_lock_query'], '');
+
+        $limit = vnbiz_get_var($meta['limit'], 100);
+        $offset = vnbiz_get_var($meta['offset'], 0);
+
+        if ($limit > 1000) {
+            throw new VnBizError('Limit too large', 'unsupported');
+        }
+
+        // fetch from cache when filter by [id] or [id, ns] and no other conditions
+        if (
+            (
+                isset($context['filter']) &&  (
+                    (sizeof($context['filter']) == 1 && isset($context['filter']['id']) && !empty($context['filter']['id']))
+                    || (sizeof($context['filter']) == 2 && isset($context['filter']['id']) && !empty($context['filter']['id']) && isset($context['filter']['ns']))
+                )
+            )
+            && strlen($sql_query_order) == 0 && strlen($lock_query) == 0
+        ) {
+            $ns = isset($context['filter']['ns']) ? $context['filter']['ns'] : '0';
+            if (is_array($ns)) {
+                throw new VnBizError('Filter[ns] must be number or array of numbers', 'invalid_context', ['filter' => $context['filter']], null, 500);
+            }
+            $ids = $context['filter']['id'];
+            if (!is_iterable($ids)) {
+                $ids = [$ids];
+            }
+            if (!is_array($ids)) {
+                throw new VnBizError('Filter[id] must be number or array of numbers', 'invalid_context', ['filter' => $context['filter']], null, 500);
+            }
+            // remove duplicate ids && null ids
+            // $ids = array_values(array_filter(array_unique($ids), function ($id) {
+            //     return is_numeric($id);
+            // }));
+            // do fetch from cache. If don't have cache, fetch from db and save to cache
+
+            $cached_keys = array_map(function ($id) use ($model_name, $ns) {
+                return "$ns:$model_name:$id";
+            }, $ids);
+            $cache_result = vnbiz_redis_get_arrays($cached_keys);
+            $cached_rows = [];
+
+            // load missed rows from db
+            $missed_ids = [];
+            foreach ($ids as $index=>$id) {
+                if (!$cache_result[$index]) {
+                    $missed_ids[] = $id;
+                } else {
+                    $cached_rows[] = $cache_result[$index];
+                }
+            }
+
+            if (sizeof($missed_ids) == 0) {
+                return $cached_rows;
+            }
+
+            $rows = R::find($model_name, 'id IN (' . R::genSlots($missed_ids) . ')', $missed_ids);
+            $rows = R::beansToArray($rows);
+            foreach ($rows as $row) {
+                $id = $row['id'];
+                $key = "$ns:$model_name:$id";
+                vnbiz_redis_set_array($key, $row);
+            }
+
+            return array_merge($cached_rows, $rows);
+        }
+
+
+        $sql_query_conditions = join(' AND ', $sql_query_conditions);
+        $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ? ' . $lock_query;
+        $sql_params = array_merge($sql_query_params, [$limit, $offset]);
+
+        $context['sql_query'] = $sql_query;
+        $context['sql_params'] = $sql_params;
+
+        $rows = R::find($model_name, $sql_query, $sql_params);
+        $rows = R::beansToArray($rows);
+
+        // do cache thr rows
+        $ns = isset($context['filter']['ns']) ? $context['filter']['ns'] : '0';
+        foreach ($rows as $row) {
+            $id = $row['id'];
+            $key = "$ns:$model_name:$id";
+            vnbiz_redis_set_array($key, $row);
+        }
+        return $rows;
+    }
+
     private function add_action_model_find()
     {
         $this->actions()->add_action_one('model_find', function (&$context) {
@@ -301,31 +402,11 @@ trait VnBiz_sql
 
             $skip_db_actions ?: $this->actions()->do_action("db_before_find_$model_name", $context);
 
-            $sql_query_conditions = &$context['sql_query_conditions'];
-            $sql_query_params = &$context['sql_query_params'];
-            $sql_query_order = vnbiz_get_var($context['sql_query_order'], '');
-            $lock_query = vnbiz_get_var($context['sql_lock_query'], '');
-
-            $limit = vnbiz_get_var($meta['limit'], 100);
-            $offset = vnbiz_get_var($meta['offset'], 0);
             $ref = vnbiz_get_var($meta['ref'], false);
             $count = vnbiz_get_var($meta['count'], false);
 
-            if ($limit > 1000) {
-                throw new VnBizError('Limit too large', 'unsupported');
-            }
 
-            $sql_query_conditions = join(' AND ', $sql_query_conditions);
-
-            $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ? ' . $lock_query;
-
-            $sql_params = array_merge($sql_query_params, [$limit, $offset]);
-
-            $context['sql_query'] = $sql_query;
-            $context['sql_params'] = $sql_params;
-
-            $rows = R::find($model_name, $sql_query, $sql_params);
-            $rows = R::beansToArray($rows);
+            $rows = $this->db_fetch($context);
             $context['models'] = [];
 
             foreach ($rows as $row) {
@@ -395,6 +476,8 @@ trait VnBiz_sql
             }
 
             if ($count) {
+                $sql_query_conditions = &$context['sql_query_conditions'];
+                $sql_query_params = &$context['sql_query_params'];
                 $number_of_rows = R::count($model_name, $sql_query_conditions, $sql_query_params);
                 $context['meta']['count'] = $number_of_rows;
             }
@@ -451,6 +534,13 @@ trait VnBiz_sql
 
                 $context['old_model'] = $rows[0];
                 $context['old_model']['@model_name'] = $model_name;
+
+                //TODO: refactor this
+                // TODO: Why we can't use $context['fitler']['ns]
+                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+                vnbiz_redis_del($cached_key);
 
                 // foreach ($field_names as $field_name) {
                 //     if (isset($model[$field_name])) {

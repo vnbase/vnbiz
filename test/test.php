@@ -16,7 +16,7 @@ vnbiz()
 ;
 
 
-R::debug( TRUE );
+// R::debug( TRUE );
 
 vnbiz()
 	->init_modules(
