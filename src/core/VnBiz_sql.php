@@ -26,7 +26,7 @@ trait VnBiz_sql
             $model_name = $context['model_name'];
             $schema = $this->models()[$model_name]->schema();
 
-            
+
 
             $in_trans = vnbiz_get_key($context, 'in_trans', false);
             if (!$in_trans) {
@@ -123,7 +123,7 @@ trait VnBiz_sql
                 $skip_db_actions ?: $this->actions()->do_action("db_before_update_$model_name", $context);
 
                 $row = R::dispense($model_name);
-                $row->id = $old_model['id']; 
+                $row->id = $old_model['id'];
                 $row->import($schema->crop($context['model']));
                 R::store($row);
 
@@ -331,7 +331,7 @@ trait VnBiz_sql
                     'model' => $row
                 ];
 
-                $skip_db_actions ?: $this->actions()->do_action("db_after_get_$model_name", $c);
+                $skip_db_actions ?: $this->actions()->do_action("db_after_fetch_$model_name", $c);
 
                 $context['models'][] = $c['model'];
             }
@@ -368,7 +368,7 @@ trait VnBiz_sql
                             'model' => $row
                         ];
 
-                        $skip_db_actions ?: $this->actions()->do_action("db_after_get_$ref_model_name", $c);
+                        $skip_db_actions ?: $this->actions()->do_action("db_after_fetch_$ref_model_name", $c);
 
                         $models[$row['id']] = $c['model'];
                     }
@@ -431,7 +431,8 @@ trait VnBiz_sql
                     'meta' => [
                         'limit' => 1
                     ],
-                    'in_trans' => true
+                    'in_trans' => true,
+                    'sql_lock_query' => 'FOR UPDATE'
                 ];
 
                 vnbiz_do_action('model_find', $find_context);
@@ -491,10 +492,18 @@ trait VnBiz_sql
 
             $sql_query_conditions = &$context['sql_query_conditions'];
             $sql_query_params = &$context['sql_query_params'];
-
+            $lock_query = vnbiz_get_var($context['sql_lock_query'], '');
 
 
             $sql_query_conditions = join(' AND ', $sql_query_conditions);
+
+            if ($sql_query_conditions) {
+                $sql_query_conditions = ' WHERE ' . $sql_query_conditions;
+            }
+
+            $count = R::getCell('SELECT COUNT(*) FROM ' . $model_name . $sql_query_conditions . ' ' . $lock_query, $sql_query_params);
+            $context['count'] = $count;;
+
             // if (isset($context['debug']) && $context['debug']) {
             //     if (!is_array($context['debug'])) {
             //         $context['debug'] = [];
@@ -503,7 +512,7 @@ trait VnBiz_sql
             //     $context['debug'][] = ['sql', $model_name, $sql_query_conditions, $sql_query_params];
             // }
 
-            $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
+            // $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
 
             $this->actions()->do_action("db_after_count_$model_name", $context);
 

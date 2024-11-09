@@ -47,7 +47,7 @@ class Client
      */
     public function REQUEST($formData, $headers = [], $url = 'http://localhost:8888/test/')
     {
-        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(52);
+        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(54);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
@@ -98,7 +98,7 @@ class Client
         // Close the cURL session
         if (json_last_error() === JSON_ERROR_NONE) {
 
-            // $this->log_receive($jsonResponse);
+            $this->log_receive($jsonResponse);
 
             return [$httpStatusCode, $jsonResponse];
         } else {

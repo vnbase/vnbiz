@@ -150,10 +150,10 @@ trait Model_event
         return $this;
     }
 
-    public function db_after_get($func)
+    public function db_after_fetch($func)
     {
         $model_name = $this->schema->model_name;
-        vnbiz_add_action("db_after_get_$model_name", $func);
+        vnbiz_add_action("db_after_fetch_$model_name", $func);
 
         return $this;
     }

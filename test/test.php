@@ -16,7 +16,7 @@ vnbiz()
 ;
 
 
-// R::debug( TRUE );
+R::debug( TRUE );
 
 vnbiz()
 	->init_modules(
@@ -97,6 +97,20 @@ vnbiz_model_add('testmodela')
 	->index('index_name_1', ['string_1', 'int_1'])
 	->text_search('text_1', 'text_2')
 
+;
+
+vnbiz_model_add('testrefa')
+	->string('string_1')
+	->password('password_1')
+	->back_ref_count('testrefb_count', 'testrefb', 'testrefa_id', [
+		'string_1' => 'active'
+	])
+	->ref('parent_id', 'testrefa')
+;
+vnbiz_model_add('testrefb')
+	->string('string_1')
+	->password('password_1')
+	->ref('testrefa_id', 'testrefa')
 ;
 
 vnbiz_model_add('testscope')

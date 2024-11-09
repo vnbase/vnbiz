@@ -460,7 +460,7 @@ class Model
 		};
 
 
-		$this->db_after_get($func_get_model_tags);
+		$this->db_after_fetch($func_get_model_tags);
 
 
 		$func_delete_model_tags = function (&$context) use ($model_name) {
@@ -1012,13 +1012,13 @@ class Model
 				}
 			}
 		};
-		
+
 		$this->web_after_create($func_convert_to_json_string);
 		$this->web_after_find($func_convert_to_json_string);
 		$this->web_after_update($func_convert_to_json_string);
 		$this->web_after_delete($func_convert_to_json_string);
 
-		$this->db_after_get(function (&$context) use ($field_names) {
+		$this->db_after_fetch(function (&$context) use ($field_names) {
 			$model = &$context['model'];
 
 			foreach ($field_names as $field_name) {
@@ -1507,7 +1507,7 @@ class Model
 					$context['ref_field_name'] = $field_name;
 					vnbiz_do_action("model_new_ref_$ref_model_name", $context);
 				}
-				
+
 				// $context['ref_field_name'] = $field_name;
 				// vnbiz_do_action("model_new_ref_$ref_model_name", $context);
 			}
@@ -1622,6 +1622,31 @@ class Model
 			$context['model'][$field_name] = 0;
 		});
 
+		$increase = function (&$context) use ($field_name, $model_name, $ref_model_name, $ref_field_name, $filter) {
+			$id = null;
+			if (isset($context['model']) && isset($context['model'][$ref_field_name])) {
+				$id = $context['model'][$ref_field_name];
+			}
+
+			if ($id !== null) {
+				$count_filter = array_merge($filter, [$ref_field_name => $id]);
+				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
+				try {
+					vnbiz_model_update($model_name, [
+						'id' => $id
+					], [
+						$field_name => $count
+					], [
+						'skip_db_actions' => true
+					], true);
+				} catch (\Exception $e) {
+					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
+				}
+			}
+		};
+
+		vnbiz_add_action('db_after_commit_create_' . $ref_model_name, $increase);
+
 		$recount = function (&$context) use ($field_name, $model_name, $ref_model_name, $ref_field_name, $filter) {
 
 			$id = null;
@@ -1633,9 +1658,15 @@ class Model
 				$old_id = $context['old_model'][$ref_field_name];
 			}
 
-			if ($id && vnbiz_array_contains_array($context['model'], $filter)) {
+			// on ref with: filter is empty or updated-model contains filter's fields
+			$has_ref_id = $id !== null;
+			$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
+
+			//($has_ref_id && $id !== $old_id) = changed ref_id from one to another.
+			if (($has_ref_id && $updated_model_contains_filter) || ($has_ref_id && $id !== $old_id)) {
+				// update count
 				$count_filter = array_merge($filter, [$ref_field_name => $id]);
-				$count = vnbiz_model_count($ref_model_name, $count_filter);
+				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
 				try {
 					vnbiz_model_update($model_name, [
 						'id' => $id
@@ -1643,16 +1674,21 @@ class Model
 						$field_name => $count
 					], [
 						'skip_db_actions' => true
-					]);
+					], true);
 				} catch (\Exception $e) {
-					// echo $model_name . '#' . $id . "#";
-					// trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
 					throw $e;
 				}
+			} else {
+				$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
+				echo "Skikp ref: $has_ref_id  recount updated model $updated_model_contains_filter  KKKK\n";
+				var_dump($context['model'], array_keys($filter));
 			}
-			if ($old_id && $old_id !== $id && vnbiz_array_contains_array($context['old_model'], $filter)) {
+
+			// $old_model[id] == $model[id] => no need to recount (counted in update)
+			// 
+			if ($old_id && $old_id !== $id) {
 				$count_filter = array_merge($filter, [$ref_field_name => $old_id]);
-				$count = vnbiz_model_count($ref_model_name, $count_filter);
+				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
 				try {
 					vnbiz_model_update($model_name, [
 						'id' => $old_id
@@ -1660,14 +1696,13 @@ class Model
 						$field_name => $count
 					], [
 						'skip_db_actions' => true
-					]);
+					], true);
 				} catch (\Exception $e) {
 					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
 				}
 			}
 		};
 
-		vnbiz_add_action('db_after_commit_create_' . $ref_model_name, $recount);
 		vnbiz_add_action('db_after_commit_update_' . $ref_model_name, $recount);
 		vnbiz_add_action('db_after_commit_delete_' . $ref_model_name, $recount);
 

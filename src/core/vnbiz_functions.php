@@ -48,18 +48,16 @@ function vnbiz_random_string($length = 10)
     return $randomString;
 }
 
-function vnbiz_array_contains_array($model, $filter)
+function vnbiz_array_has_one_of_keys($array, $keys)
 {
-    foreach ($filter as $key => $value) {
-        if (!isset($model[$key])) {
-            return false;
-        }
-        if ($model[$key] != $value) {
-            return false;
+    foreach ($keys as $key) {
+        if (isset($array[$key])) {
+            return true;
         }
     }
-    return true;
+    return false;
 }
+
 
 function vnbiz_now()
 {
@@ -232,27 +230,30 @@ function vnbiz_model_search(&$context)
     vnbiz_do_action("model_find_$model_name", $context);
 }
 
-function vnbiz_model_count($model_name, $filter = [])
-{
-    vnbiz_assure_model_name_exists($model_name);
-
-    $context = [
-        'model_name' => $model_name,
-        'filter' => $filter
-    ];
-    vnbiz_do_action("model_count", $context);
-
-    return $context['count'];
-}
-
-function vnbiz_model_find($model_name, $filter = [], $meta = ['limit' => 10, 'offset' => 0])
+function vnbiz_model_count($model_name, $filter = [], $in_trans = false, $sql_lock_query = '')
 {
     vnbiz_assure_model_name_exists($model_name);
 
     $context = [
         'model_name' => $model_name,
         'filter' => $filter,
-        'meta' =>  $meta
+        'in_tans' => $in_trans,
+        'sql_lock_query' => $sql_lock_query
+    ];
+    vnbiz_do_action("model_count", $context);
+
+    return $context['count'];
+}
+
+function vnbiz_model_find($model_name, $filter = [], $meta = ['limit' => 10, 'offset' => 0], $sql_lock_query = '')
+{
+    vnbiz_assure_model_name_exists($model_name);
+
+    $context = [
+        'model_name' => $model_name,
+        'filter' => $filter,
+        'meta' =>  $meta,
+        'sql_lock_query' => $sql_lock_query
     ];
     vnbiz_do_action("model_find", $context);
     return $context['models'];
