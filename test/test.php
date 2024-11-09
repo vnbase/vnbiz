@@ -15,6 +15,9 @@ vnbiz()
 	->use_namespaces()
 ;
 
+
+// R::debug( TRUE );
+
 vnbiz()
 	->init_modules(
 		'systemconfig',

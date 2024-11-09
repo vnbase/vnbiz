@@ -50,7 +50,6 @@ include __DIR__ . '/core/VnBiz.php';
 
 date_default_timezone_set("UTC");
 
-
 vnbiz_add_action('service_health_check', function (&$context) { 
 	$mysql_connected = R::testConnection();
 	$redis_connected = vnbiz_redis()->ping();

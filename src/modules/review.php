@@ -10,7 +10,9 @@ function vnbiz_init_module_review()
             $model = $context['model'] ?? $context['old_model'];
             $ref_model_name = $model['model_name'];
             $ref_model_id =$model['model_id'];
-            $rows = R::getAll("SELECT rate, COUNT(rate) as count FROM `review` WHERE model_name=? AND model_id=? GROUP BY rate", [$ref_model_name, $ref_model_id]);
+            
+            // FOR SHARE: make sure the rows are not changed by other transactions
+            $rows = R::getAll("SELECT rate, COUNT(rate) as count FROM `review` WHERE model_name=? AND model_id=? GROUP BY rate FOR SHARE", [$ref_model_name, $ref_model_id]);
             // $rows = R::beansToArray($rows);
             // var_dump($rows);
 
