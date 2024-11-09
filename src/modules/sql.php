@@ -41,11 +41,13 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 		case 'model_name':
 			$sql_type = 'VARCHAR(20)';
 			break;
+		case 'namespace':
+			$sql_type = 'INT UNSIGNED DEFAULT 0';
+			break;
 		case 'model_id':
 		case 'ref':
 		case 'file':
 		case 'image':
-		case 'namespace':
 			$sql_type = 'INT UNSIGNED';
 			break;
 		case 'bool':
