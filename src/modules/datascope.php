@@ -51,7 +51,7 @@ function vnbiz_current_user_inaccessable_datascope($scopes)
 
 trait vnbiz_trait_datascope
 {
-    public $has_datascope = false;    //TODO
+    public $has_datascope = false;    
 
     public function has_datascope()
     {

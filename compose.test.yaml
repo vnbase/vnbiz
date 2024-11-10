@@ -35,8 +35,6 @@ services:
       - mysql8
       - redis7
 
-
-
   mysql8:
     # image: mariadb:10.11.9-jammy
     # image: mysql:9.1.0
@@ -90,13 +88,13 @@ services:
       timeout: 5s
       retries: 4
 
-  phpmyadmin:
-    image: phpmyadmin:5.2.1-apache
-    restart: always
-    depends_on:
-      - mysql8
-    environment:
-      PMA_HOST: mysql8
-    # (this is just an example, not intended to be a production configuration)
-    ports:
-      - 9090:80
+  # phpmyadmin:
+  #   image: phpmyadmin:5.2.1-apache
+  #   restart: always
+  #   depends_on:
+  #     - mysql8
+  #   environment:
+  #     PMA_HOST: mysql8
+  #   # (this is just an example, not intended to be a production configuration)
+  #   ports:
+  #     - 9090:80

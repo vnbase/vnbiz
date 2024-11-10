@@ -154,7 +154,16 @@ trait VnBiz_restful
             error_log($output);
         }
 
-        unset($result['params']);
+        if (!vnbiz_debug_enabled()) {
+            unset($result['params']);
+            unset($result['sql_query_conditions']);
+            unset($result['sql_query_params']);
+            unset($result['sql_lock_query']);
+            unset($result['sql_query']);
+            unset($result['sql_params']);
+            unset($result['sql_query_order']);
+            unset($result['stack']);
+        }
 
         header('Content-Type: application/json');
         echo json_encode($result, JSON_UNESCAPED_SLASHES);
