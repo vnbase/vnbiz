@@ -3,8 +3,8 @@
 
 max_retry=5
 counter=0
-echo "curl --fail-with-body http://localhost:8888/test/sql.php"
-until curl --fail-with-body http://localhost:8888/test/sql.php
+echo "curl --fail-with-body http://localhost:8080/test/sql.php"
+until curl --fail-with-body http://localhost:8080/test/sql.php
 do
    sleep 3
    [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1
@@ -16,7 +16,7 @@ echo "############################# START TESTING ###########################"
 
 # docker-compose exec webapp $TEST_COMMAND
 #  --testsuite project
- docker exec --user root vnbiz-webapp-1 vendor/bin/phpunit --configuration phpunit.xml
+ docker exec --user root vnbiz-backend-1 vendor/bin/phpunit --configuration phpunit.xml
 TEST_RESULT=$?
 echo "############################# END TESTING ###########################"
 
