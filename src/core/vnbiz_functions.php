@@ -302,6 +302,15 @@ function vnbiz_user()
 {
     return isset($GLOBALS['vnbiz_user']) ? $GLOBALS['vnbiz_user'] : null;
 }
+
+function vnbiz_user_id()
+{
+    if (vnbiz_user()) {
+        return vnbiz_user()['id'];
+    }
+    return null;
+}
+
 function vnbiz_user_or_throw()
 {
     $user = vnbiz_user();

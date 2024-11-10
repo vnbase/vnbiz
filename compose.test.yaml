@@ -23,6 +23,10 @@ services:
       dockerfile: Dockerfile.test
     environment:
       VNBIZ_DEBUG: true
+      VNBIZ_SQL_HOST: mysql8
+      VNBIZ_SQL_DB: vnbiz_dev
+      VNBIZ_SQL_USER: root
+      VNBIZ_SQL_PASSWORD: rootpass
     # ports:
     #   - 9999:9000
     volumes:

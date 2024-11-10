@@ -23,6 +23,10 @@ services:
       dockerfile: Dockerfile.test
     environment:
       VNBIZ_DEBUG: true
+      VNBIZ_SQL_HOST: "10.10.0.3"
+      VNBIZ_SQL_DB: "vnbase_test"
+      VNBIZ_SQL_USER: "vnbase_test"
+      VNBIZ_SQL_PASSWORD: "vnbase_test"
     # ports:
     #   - 9999:9000
     volumes:
@@ -32,35 +36,35 @@ services:
       - ./tests:/var/www/html/tests
       - ./phpunit.xml:/var/www/html/phpunit.xml
     depends_on:
-      - mysql8
+      # - mysql8
       - redis7
 
-  mysql8:
-    # image: mariadb:10.11.9-jammy
-    # image: mysql:9.1.0
-    image: mysql:8.4.2
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: vnbiz_dev
-    ports:
-      - 3306:3306
-    # volumes:
-    #   - ./data.mysql.test:/var/lib/mysql
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 2G
-        reservations:
-          cpus: '0.3'
-          memory: 1G
-    healthcheck:
-      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
-      start_period: 1s
-      interval: 5s
-      timeout: 1s
-      retries: 5
+  # mysql8:
+  #   # image: mariadb:10.11.9-jammy
+  #   # image: mysql:9.1.0
+  #   image: mysql:8.4.2
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: rootpass
+  #     MYSQL_DATABASE: vnbiz_dev
+  #   ports:
+  #     - 3306:3306
+  #   # volumes:
+  #   #   - ./data.mysql.test:/var/lib/mysql
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.50'
+  #         memory: 2G
+  #       reservations:
+  #         cpus: '0.3'
+  #         memory: 1G
+  #   healthcheck:
+  #     test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+  #     start_period: 1s
+  #     interval: 5s
+  #     timeout: 1s
+  #     retries: 5
 
   redis7:
     image: redis:7.4.1-alpine
@@ -88,13 +92,13 @@ services:
       timeout: 5s
       retries: 4
 
-  phpmyadmin:
-    image: phpmyadmin:5.2.1-apache
-    restart: always
-    depends_on:
-      - mysql8
-    environment:
-      PMA_HOST: mysql8
-    # (this is just an example, not intended to be a production configuration)
-    ports:
-      - 9090:80
+  # phpmyadmin:
+  #   image: phpmyadmin:5.2.1-apache
+  #   restart: always
+  #   depends_on:
+  #     - mysql8
+  #   environment:
+  #     PMA_HOST: mysql8
+  #   # (this is just an example, not intended to be a production configuration)
+  #   ports:
+  #     - 9090:80
