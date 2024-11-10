@@ -22,20 +22,20 @@ vnbiz()
 	->init_modules(
 		'systemconfig',
 		'user',
+		'datascope',
+		'monitor',
+		's3',
+		'email',
+		'oauth',
 		'usermark',
 		'comment',
 		'tag',
 		'review',
 		'history',
-		's3',
 		'template',
-		'email',
-		'oauth',
 		'notification',
 		'redis',
-		'monitor',
-		'useractivity',
-		'datascope'
+		'useractivity'
 	);
 
 include_once(__DIR__ . "/../example/types.php");

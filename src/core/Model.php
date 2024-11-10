@@ -3,6 +3,7 @@
 namespace VnBiz;
 
 use Error;
+use VnBiz\VnBizError;
 use R;
 
 class Model

@@ -106,5 +106,3 @@ RUN echo "\
 <policy domain=\"coder\" rights=\"read|write\" pattern=\"ICO\" /> \
 <policy domain=\"coder\" rights=\"read|write\" pattern=\"SVG\" /> \
 <policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" />" >> /etc/ImageMagick-7/policy.xml
-
-RUN apk add --no-cache nginx supervisor

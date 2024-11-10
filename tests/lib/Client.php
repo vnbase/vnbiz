@@ -5,7 +5,6 @@ if (class_exists('Client')) {
 }
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-error_log("You messed up!", 3, "./test-error.log");
 class Client
 {
     private $client_access_token = null;
@@ -45,9 +44,9 @@ class Client
             'file' => new CURLFile($filePath)  // Attach the file
         ];
      */
-    public function REQUEST($formData, $headers = [], $url = 'http://localhost:8888/test/')
+    public function REQUEST($formData, $headers = [], $url = 'http://localhost:8080/test/')
     {
-        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(66);
+        $url = 'http://localhost:8080/test/?debug=true&ns=' . vnbiz_encrypt_id(67);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;

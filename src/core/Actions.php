@@ -2,9 +2,13 @@
 
 namespace VnBiz;
 
+use ReflectionFunction;
+
 class Actions
 {
     private $actions = [];
+
+    private $stack = [];
 
     public function add_action($action, $func)
     {
@@ -45,23 +49,19 @@ class Actions
 
     public function do_action($action, &$context = [])
     {
-        // $str = '';
-        // $model_name = '';
-        // $meta = '';
-        // if (isset($context['filter'])) {
-        //     $str = json_encode($context['filter']);
-        // }
-        // if (isset($context['model_name'])) {
-        //     $model_name = $context['model_name'];
-        // }
-        // if (isset($context['meta'])) {
-        //     $meta = json_encode($context['meta']);
-        // }
-        // echo ("do_action: $action, model: $model_name, fitler: $str, meta: $meta \n");
-
         if (isset($this->actions[$action])) {
+
+            if (vnbiz_debug_enabled()) {
+                $this->stack[] = $action;
+                L_withName(join('>', $this->stack));
+            }
+
             foreach ($this->actions[$action] as $func) {
                 call_user_func_array($func, [&$context]);
+            }
+
+            if (vnbiz_debug_enabled()) {
+                array_pop($this->stack);
             }
         }
     }

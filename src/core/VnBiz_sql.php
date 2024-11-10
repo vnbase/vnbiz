@@ -13,6 +13,7 @@ trait VnBiz_sql
     {
 
         $this->actions()->add_action_one('model_create', function (&$context) {
+            L()->debug('model_create', $context);
 
             $this->actions()->do_action('db_before_create', $context);
 
@@ -72,6 +73,8 @@ trait VnBiz_sql
     {
 
         $this->actions()->add_action_one('model_update', function (&$context) {
+            L()->debug('model_update', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
             $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
 
@@ -348,9 +351,13 @@ trait VnBiz_sql
             }
 
             if (sizeof($missed_ids) == 0) {
+                L()->debug('db_fetch(): all from catch', $missed_ids);
                 return $cached_rows;
             }
 
+            L()->debug('db_fetch(): more from sql: ', $missed_ids);
+
+            // L()->debug('db_fetch() R::find() ' . $model_name, $missed_ids);
             $rows = R::find($model_name, 'id IN (' . R::genSlots($missed_ids) . ')', $missed_ids);
             $rows = R::beansToArray($rows);
             foreach ($rows as $row) {
@@ -362,13 +369,14 @@ trait VnBiz_sql
             return array_merge($cached_rows, $rows);
         }
 
-
         $sql_query_conditions = join(' AND ', $sql_query_conditions);
         $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ? ' . $lock_query;
         $sql_params = array_merge($sql_query_params, [$limit, $offset]);
 
         $context['sql_query'] = $sql_query;
         $context['sql_params'] = $sql_params;
+
+        L()->debug("db_fetch(): fetch from sql: $model_name, $sql_query", $sql_params);
 
         $rows = R::find($model_name, $sql_query, $sql_params);
         $rows = R::beansToArray($rows);
@@ -386,6 +394,8 @@ trait VnBiz_sql
     private function add_action_model_find()
     {
         $this->actions()->add_action_one('model_find', function (&$context) {
+            L()->debug('model_find ', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
             $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
 
@@ -492,6 +502,8 @@ trait VnBiz_sql
     private function add_action_model_delete()
     {
         $this->actions()->add_action_one('model_delete', function (&$context) {
+            L()->debug('model_delete', $context);
+
             $this->actions()->do_action('db_before_delete', $context);
 
             if (!isset($context['model_name'])) {
@@ -568,6 +580,8 @@ trait VnBiz_sql
     private function add_action_model_count()
     {
         $this->actions()->add_action_one('model_count', function (&$context) {
+            L()->debug('model_count', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
             $this->actions()->do_action('db_before_count', $context);
 
