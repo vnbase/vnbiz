@@ -81,7 +81,7 @@ vnbiz_model_add('productpromotion')
         'auto_status' => true
     ])
     ->bool('auto_status')
-    ->slug('promotion_code')
+    ->string('promotion_code')
     ->string('name')
     ->text('description', 'note')
     ->s3_image('photo', [600])
@@ -142,11 +142,23 @@ vnbiz_model_add('productorder')
         if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
             return true;
         }
+        return false;
     })
-    ->write_field_permission_or([], ['productorder_write'], function (&$context) {
+    ->write_field_permission_or(['contact_id'], ['productorder_write'], function (&$context) {
+        // customer can only refer to their own contact
+        if (isset($model['contact_id'])) {
+            $contact = vnbiz_model_find_one('contact', ['id' => $model['contact_id']]);
+            if ($contact && $contact['created_by'] == vnbiz_user_id()) {
+                return true;
+            }
+        }
+        return false;
+    })
+    ->write_field_permission_or([ 'status'], ['productorder_write'], function (&$context) {
         if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
             return true;
         }
+        return false;
     })
 ;
 
