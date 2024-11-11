@@ -137,6 +137,18 @@ trait Model_event
     public function db_after_create($func)
     {
         $model_name = $this->schema->model_name;
+        vnbiz_add_action("db_after_create", function (&$context) use ($func, $model_name) {
+            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
+                $func($context);
+            }
+        });
+
+        return $this;
+    }
+
+    public function db_end_create($func)
+    {
+        $model_name = $this->schema->model_name;
         vnbiz_add_action("db_after_create_$model_name", $func);
 
         return $this;
@@ -183,6 +195,18 @@ trait Model_event
     public function db_after_update($func)
     {
         $model_name = $this->schema->model_name;
+        vnbiz_add_action("db_after_update", function (&$context) use ($func, $model_name) {
+            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
+                $func($context);
+            }
+        });
+
+        return $this;
+    }
+
+    public function db_end_update($func)
+    {
+        $model_name = $this->schema->model_name;
         vnbiz_add_action("db_after_update_$model_name", $func);
 
         return $this;
@@ -205,6 +229,18 @@ trait Model_event
     }
 
     public function db_after_delete($func)
+    {
+        $model_name = $this->schema->model_name;
+        vnbiz_add_action("db_after_delete", function (&$context) use ($func, $model_name) {
+            if (isset($context['model_name']) && $context['model_name'] == $model_name) {
+                $func($context);
+            }
+        });
+
+        return $this;
+    }
+
+    public function db_end_delete($func)
     {
         $model_name = $this->schema->model_name;
         vnbiz_add_action("db_after_delete_$model_name", $func);

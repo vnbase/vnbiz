@@ -96,8 +96,9 @@ services:
   #   image: phpmyadmin:5.2.1-apache
   #   restart: always
   #   depends_on:
-  #     - mysql8
+  #     # - mysql8
   #   environment:
+  #     # PMA_HOST: "10.10.0.3"
   #     PMA_HOST: mysql8
   #   # (this is just an example, not intended to be a production configuration)
   #   ports:

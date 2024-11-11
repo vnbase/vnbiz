@@ -132,6 +132,11 @@ trait VnBiz_restful
                 'stack' => $e->getTraceAsString()
             ];
         } catch (Exception $e) {
+            L()->error($e->getMessage(), [
+                'context' => $context,
+                'stack' => $e->getTraceAsString()
+            ]);
+
             http_response_code(500);
             $result = [
                 'code' => 'error',

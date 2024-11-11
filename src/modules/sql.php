@@ -85,11 +85,13 @@ function vnbiz_sql_gen_column($model_name, $field_name, $field_def)
 			break;
 		case 'enum':
 		case 'status':
-			$options	= array_map(function ($item) {
-				return '"' . $item . '"';
-			}, $field_def['options']);
-			$sql_type = 'ENUM(' . join(',', $options) . ')';
+			$sql_type = 'VARCHAR(50)';
 			break;
+			// $options	= array_map(function ($item) {
+			// 	return '"' . $item . '"';
+			// }, $field_def['options']);
+			// $sql_type = 'ENUM(' . join(',', $options) . ')';
+			// break;
 		default:
 			throw new \Error("Missing sql type for $model_name, $field_name, " . $field_def['type']);
 	}

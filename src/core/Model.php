@@ -82,6 +82,48 @@ class Model
 		return array_keys($this->schema->schema);
 	}
 
+	public function copyValue100($field_name, $ref_field_name, $origin_model_name, $origin_field_name)
+	{
+		$model_name = $this->schema->model_name;
+
+		$origin_model_schema = vnbiz_model($origin_model_name);
+		if (!isset($origin_model_schema->schema()->schema[$origin_field_name])) {
+			throw new VnBizError("$origin_field_name) is not defined in $origin_model_name");
+		}
+		$origin_field = $origin_model_schema->schema()->schema[$origin_field_name];
+		if (!isset($this->schema()->schema[$field_name])) {
+			throw new VnBizError("$field_name is not defined");
+		}
+		$field = $this->schema()->schema[$field_name];
+		if ($field['type'] !== $origin_field['type']) {
+			throw new VnBizError("$field_name type must be " . $origin_field['type'] . ', same with ' . $origin_model_name . '.' . $origin_field_name);
+		}
+
+		$func_mirror = function (&$context) use ($model_name, $field_name, $ref_field_name, $origin_field_name) {
+			$origin_model = &$context['model'];
+			$origin_old_model = &$context['old_model'];
+			if (isset($origin_model[$origin_field_name]) && (!isset($origin_old_model[$origin_field_name]) || $origin_model[$origin_field_name] != $origin_old_model[$origin_field_name])) {
+				$models = vnbiz_model_find($model_name, [
+					$ref_field_name => $origin_old_model['id']
+				], [
+					'limit' => 100
+				]);
+				foreach ($models as $m) {
+					vnbiz_model_update($model_name, [
+						'id' => $m['id']
+					], [
+						$field_name => $origin_model[$origin_field_name]
+					], [
+						'skip_db_actions' => true
+					], true);
+				}
+			}
+		};
+
+		vnbiz_model($origin_model_name)->db_end_update($func_mirror);
+		return $this;
+	}
+
 	// private function crop() {
 	// 	$model_name = $this->schema->model_name;
 	// 	$func_crop = function (&$context) {
@@ -337,7 +379,7 @@ class Model
 
 		$this->schema()->has_history = true;
 
-		$this->db_after_update(function (&$context) use ($model_name) {
+		$this->db_end_update(function (&$context) use ($model_name) {
 			$model = &$context['old_model'];
 			$c = [
 				'model_name' => 'history',
@@ -352,7 +394,7 @@ class Model
 		});
 
 		if ($remove_on_delete) {
-			$this->db_after_delete(function (&$context) use ($model_name) {
+			$this->db_end_delete(function (&$context) use ($model_name) {
 				$model = &$context['old_model'];
 				R::exec('DELETE FROM `history` WHERE model_name=? AND model_id=?', [$model_name, $model['id']]);
 			});
@@ -1556,7 +1598,7 @@ class Model
 				}
 
 				if ($fn_permission_check) {
-					if ($fn_permission_check($ref_id)) {
+					if ($fn_permission_check($context)) {
 						return;
 					} else {
 						throw new VnBizError("Invalid $field_name, missing permissions", 'permission', [
@@ -1685,7 +1727,9 @@ class Model
 			}
 		};
 
-		vnbiz_add_action('db_after_commit_create_' . $ref_model_name, $increase);
+
+		// vnbiz_model($ref_model_name)->db_end_create($increase);
+		vnbiz_add_action('db_after_create_' . $ref_model_name, $increase);
 
 		$recount = function (&$context) use ($field_name, $model_name, $ref_model_name, $ref_field_name, $filter) {
 
@@ -1743,8 +1787,10 @@ class Model
 			}
 		};
 
-		vnbiz_add_action('db_after_commit_update_' . $ref_model_name, $recount);
-		vnbiz_add_action('db_after_commit_delete_' . $ref_model_name, $recount);
+		// vnbiz_model($ref_model_name)->db_end_update($recount);
+		// vnbiz_model($ref_model_name)->db_end_delete($recount);
+		vnbiz_add_action('db_after_update_' . $ref_model_name, $recount);
+		vnbiz_add_action('db_after_delete_' . $ref_model_name, $recount);
 
 		return $this;
 	}

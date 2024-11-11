@@ -124,12 +124,9 @@ trait VnBiz_sql
                 $context['old_model'] = $old_model;
                 $context['old_model']['@model_name'] = $model_name;
 
-                $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
-                vnbiz_redis_del($cached_key);
-
                 $skip_db_actions ?: $this->actions()->do_action("db_before_update_$model_name", $context);
+
+                L()->debug('model_update: id:' . $old_model['id'], $context['model']);
 
                 $row = R::dispense($model_name);
                 $row->id = $old_model['id'];
@@ -140,6 +137,11 @@ trait VnBiz_sql
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
+
+                $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+                vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();
                 !$in_trans && ($context['in_trans'] = false);
@@ -353,7 +355,7 @@ trait VnBiz_sql
             // TODO: $limit, $offset is not supported?
 
             if (sizeof($missed_ids) == 0) {
-                L()->debug('db_fetch(): all from catch', $missed_ids);
+                L()->debug('db_fetch(): all from cache', $ids);
                 return $cached_rows;
             }
 
@@ -551,10 +553,6 @@ trait VnBiz_sql
 
                 //TODO: refactor this
                 // TODO: Why we can't use $context['fitler']['ns]
-                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
-                vnbiz_redis_del($cached_key);
 
                 // foreach ($field_names as $field_name) {
                 //     if (isset($model[$field_name])) {
@@ -568,6 +566,11 @@ trait VnBiz_sql
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
+
+                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+                vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();
                 !$in_trans && ($context['in_trans'] = false);

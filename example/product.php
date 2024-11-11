@@ -82,8 +82,10 @@ vnbiz_model_add('productpromotion')
     ->no_delete()
     ->has_trash()
     ->default([
-        'auto_status' => true
+        'auto_status' => true,
+        'max_redeem' => 0
     ])
+    ->has_history()
     ->bool('auto_status')
     ->string('promotion_code')
     ->string('name')
@@ -95,6 +97,19 @@ vnbiz_model_add('productpromotion')
     ->enum('status', ['active', 'inactive'], 'inactive')
     ->author()
     ->has_v()
+    ->uint('max_redeem')
+    ->db_begin_update(function (&$context) {
+        $old_model = $context['old_model'];
+        $old_max_redeem = $old_model['max_redeem'];
+        if (isset($context['model']['max_redeem'])) {
+            $new_max_redeem = $context['model']['max_redeem'];
+            if ($new_max_redeem == 0 || $new_max_redeem > $old_max_redeem) {
+            } else {
+                throw new VnBizError('Invalid max_redeem, max_redeem must be 0 or higher than the current value, currrent:' . $old_max_redeem, 'invalid_model');
+            }
+        }
+    })
+    ->back_ref_count('redeem_count', 'productorderpromotion', 'productpromotion_id', ['productorder_status' => ['ordered']])
     ->has_editing_by()
     ->require('created_by', 'product_id', 'promotion_code')
     ->unique('unique_promotion_code', ['promotion_code'])
@@ -119,7 +134,9 @@ vnbiz_model_add('productorder')
     ->has_datascope(function (&$context) { // read permission
         // use for non login user
         // customer can view if they are the owner (having productorder_access_token or created_by = current_user_id);
+
         if (isset($context['filter'])) {
+            $filter = $context['filter'];
             if (isset($filter['created_by']) && $filter['created_by'] == vnbiz_user_id()) {
                 return true;
             }
@@ -200,6 +217,12 @@ vnbiz_model_add('productorderpromotion')
     ->has_trash()
     ->no_delete()
     ->no_update('productorder_id', 'productpromotion_id')
+    ->status('productorder_status', [
+        'draft' => ['ordered', 'cancelled'],
+        'ordered' => ['draft', 'cancelled'],
+        'cancelled' => [],
+    ], 'draft')
+    ->copyValue100('productorder_status', 'productorder_id', 'productorder', 'status')
     ->ref('productorder_id', 'productorder', function (&$context) {
         if (vnbiz_user_has_permissions('super', 'productorder_write')) {
             return true;
@@ -220,10 +243,18 @@ vnbiz_model_add('productorderpromotion')
     // ->write_permission_or(['productorder_write'], function (&$context) {
     //     return false;
     // })
+    ->read_permission_or_user_id(['productorder_write'], 'created_by')
+    ->write_permission_or_user_id(['productorder_write'], 'created_by')
     ->db_begin_create(function (&$context) {
         $productorder = vnbiz_model_find_one('productorder', ['id' => $context['model']['productorder_id']]);
         if ($productorder['status'] !== 'draft') {
             throw new VnBizError('Cannot add promotion when order is not in draft', 'invalid_status');
+        }
+        $productpromotion = vnbiz_model_find_one('productpromotion', ['id' => $context['model']['productpromotion_id']]);
+        if ($productpromotion['status'] !== 'active') {
+            throw new VnBizError('Cannot add inactive promotion', 'invalid_status', [
+                'productpromotion_id' => $context['model']['productpromotion_id']
+            ]);
         }
     })
     ->db_begin_update(function (&$context) {
@@ -237,21 +268,26 @@ vnbiz_model_add('productorderpromotion')
 
 vnbiz_model_add('productorderitem')
     ->no_update('productorder_id', 'product_id')
-    ->ref('productorder_id', 'productorder')
-    ->ref('product_id', 'product', function (&$context) {
+    ->ref('productorder_id', 'productorder', function (&$context) {
         if (vnbiz_user_has_permissions('super', 'productorder_write')) {
             return true;
         }
         $user_id = vnbiz_user_id();
-        
-        if ($user_id && isset($context['model']['product_id'])) {
-            $product = vnbiz_model_find_one('product', ['id' => $context['model']['product_id']]);
-            if ($product['created_by'] == $user_id) {
+        if ($user_id && isset($context['model']['productorder_id'])) {
+            $productorder = vnbiz_model_find_one('productorder', ['id' => $context['model']['productorder_id']]);
+            if ($productorder['created_by'] == $user_id) {
                 return true;
             }
         }
         return false;
     })
+    ->status('productorder_status', [
+        'draft' => ['ordered', 'cancelled'],
+        'ordered' => ['draft', 'cancelled'],
+        'cancelled' => [],
+    ], 'draft')
+    ->copyValue100('productorder_status', 'productorder_id', 'productorder', 'status')
+    ->ref('product_id', 'product')
     ->ref('productoption_id', 'productoption')
     ->uint('quantity')
     ->text('note')
