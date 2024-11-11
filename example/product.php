@@ -1,5 +1,7 @@
 <?php
 
+use VnBiz\VnBizError;
+
 include_once __DIR__ . '/_base.php';
 
 vnbiz_model_add('productcategory')
@@ -28,6 +30,8 @@ vnbiz_model_add('product')
     ->enum('status', ['active', 'inactive'], 'active')
     ->has_history()
     ->author()
+    ->has_v()
+    ->has_editing_by()
     ->require('created_by')
     ->write_permission_or(['product_write'], function (&$context) {
         return false;
@@ -90,6 +94,8 @@ vnbiz_model_add('productpromotion')
     ->datetime('start_at', 'end_at')
     ->enum('status', ['active', 'inactive'], 'inactive')
     ->author()
+    ->has_v()
+    ->has_editing_by()
     ->require('created_by', 'product_id', 'promotion_code')
     ->unique('unique_promotion_code', ['promotion_code'])
     ->index('fast', ['product_id', 'status'])
@@ -103,9 +109,13 @@ vnbiz_model_add('productpromotion')
 vnbiz_model_add('productorder')
     ->no_delete()
     ->default([
-        'datascope' => '.1.'
+        'datascope' => '.1.',
+        'status' => 'draft', 
+        'status_ship' => 'draft', 
+        'status_payment' => 'draft'
     ])
     ->author()
+    ->has_history()
     ->has_datascope(function (&$context) { // read permission
         // use for non login user
         // customer can view if they are the owner (having productorder_access_token or created_by = current_user_id);
@@ -116,48 +126,72 @@ vnbiz_model_add('productorder')
         }
         return false;
     }, function (&$context) { // write permissions.
-        // use for non login user
-        // customer can edit if they are the owner (having productorder_access_token or created_by = current_user_id);
-        if (isset($context['model'])) {
-            if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
-                return true;
-            }
-        }
+        // anyone login can create;
+        return true;
     })
     ->string('marketing_source_id')
     ->ref('contact_id', 'contact')
     ->text('customer_note', 'worker_note')
-    ->enum('status', [
-        'new',
-        'confirmed',
-        'prepared',
+    ->status('status', [
+        'draft' => ['ordered', 'cancelled'],
+        'ordered' => ['draft', 'cancelled'],
+        'cancelled' => [],
+    ], 'draft')
+    ->enum('status_ship', [
+        'draft',
+        'notified',
         'shipping',
         'shipping_back',
-        'delivered',
         'shipping_backed',
-        'cancelled'
-    ], 'new')
+    ], 'draft')
+    ->enum('status_payment', [
+        'draft',
+        'waiting',
+        'paid',
+        'refunded',
+    ], 'draft')
     ->uint('total_vnd_price')
-    ->write_permission_or(['productorder_write'], function (&$context) {
-        if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
-            return true;
-        }
-        return false;
-    })
-    ->write_field_permission_or(['contact_id'], ['productorder_write'], function (&$context) {
-        // customer can only refer to their own contact
-        if (isset($model['contact_id'])) {
-            $contact = vnbiz_model_find_one('contact', ['id' => $model['contact_id']]);
-            if ($contact && $contact['created_by'] == vnbiz_user_id()) {
+    ->require('created_by')
+    ->write_field_permission_or(['status'], ['super', 'productorder_write'], function (&$context) {
+        if (isset($context['model'])) {
+            $model = $context['model'];
+            if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
                 return true;
             }
         }
         return false;
     })
-    ->write_field_permission_or([ 'status'], ['productorder_write'], function (&$context) {
-        if (isset($model['created_by']) && $model['created_by'] == vnbiz_user_id()) {
-            return true;
+    ->db_begin_update(function (&$context) {
+        if (vnbiz_user_has_permissions('super', 'productorder_write')) {
+            return;
         }
+        // customer can't update status when:
+        // - status is cancelled
+        // - status_ship is not [draft, notified]
+        
+        $old_model = $context['old_model'];
+        if ($old_model['status'] === 'completed') {
+            throw new VnBizError('Customer cannot update completed order', 'invalid_status');
+        }
+
+        if ($old_model['status_ship'] !== 'draft' && $old_model['status_ship'] !== 'notified') {
+            throw new VnBizError('Customer cannot update order that is shipping', 'invalid_status');
+        }
+    })
+    ->write_field_permission_or(['contact_id'], ['productorder_write'], function (&$context) {
+        // customer can only refer to their own contact
+        if (isset($context['model'])) {
+            $model = $context['model'];
+            if (isset($model['contact_id'])) {
+                $contact = vnbiz_model_find_one('contact', ['id' => $model['contact_id']]);
+                if ($contact && $contact['created_by'] == vnbiz_user_id()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    })
+    ->write_field_permission_or(['status_payment', 'status_ship'], ['super', 'productorder_write'], function (&$context) {
         return false;
     })
 ;
@@ -165,18 +199,60 @@ vnbiz_model_add('productorder')
 vnbiz_model_add('productorderpromotion')
     ->has_trash()
     ->no_delete()
-    ->ref('productorder_id', 'productorder')
+    ->no_update('productorder_id', 'productpromotion_id')
+    ->ref('productorder_id', 'productorder', function (&$context) {
+        if (vnbiz_user_has_permissions('super', 'productorder_write')) {
+            return true;
+        }
+        $user_id = vnbiz_user_id();
+        
+        if ($user_id && isset($context['model']['productorder_id'])) {
+            $productorder = vnbiz_model_find_one('productorder', ['id' => $context['model']['productorder_id']]);
+            if ($productorder['created_by'] == $user_id) {
+                return true;
+            }
+        }
+        return false;
+    })
     ->ref('productpromotion_id', 'productpromotion')
     ->author()
     ->unique('unique', ['productorder_id', 'productpromotion_id'])
-    ->write_permission_or(['productorder_write'], function (&$context) {
-        return false;
+    // ->write_permission_or(['productorder_write'], function (&$context) {
+    //     return false;
+    // })
+    ->db_begin_create(function (&$context) {
+        $productorder = vnbiz_model_find_one('productorder', ['id' => $context['model']['productorder_id']]);
+        if ($productorder['status'] !== 'draft') {
+            throw new VnBizError('Cannot add promotion when order is not in draft', 'invalid_status');
+        }
+    })
+    ->db_begin_update(function (&$context) {
+        $old_model = $context['old_model'];
+        $productorder = vnbiz_model_find_one('productorder', ['id' => $old_model['productorder_id']]);
+        if ($productorder['status'] !== 'draft') {
+            throw new VnBizError('Cannot update promotion when order is not in draft', 'invalid_status');
+        }
     })
 ;
 
 vnbiz_model_add('productorderitem')
+    ->no_update('productorder_id', 'product_id')
     ->ref('productorder_id', 'productorder')
-    ->ref('product_id', 'product')
+    ->ref('product_id', 'product', function (&$context) {
+        if (vnbiz_user_has_permissions('super', 'productorder_write')) {
+            return true;
+        }
+        $user_id = vnbiz_user_id();
+        
+        if ($user_id && isset($context['model']['product_id'])) {
+            $product = vnbiz_model_find_one('product', ['id' => $context['model']['product_id']]);
+            if ($product['created_by'] == $user_id) {
+                return true;
+            }
+        }
+        return false;
+    })
+    ->ref('productoption_id', 'productoption')
     ->uint('quantity')
     ->text('note')
     ->author()
@@ -184,4 +260,20 @@ vnbiz_model_add('productorderitem')
     ->index('fast', ['productorder_id', 'product_id'])
     ->read_permission_or_user_id(['productorder_write'], 'created_by')
     ->write_permission_or_user_id(['productorder_write'], 'created_by')
+    ->db_begin_create(function (&$context) {
+        $productorder = vnbiz_model_find_one('productorder', ['id' => $context['model']['productorder_id']]);
+        if ($productorder['status'] !== 'draft') {
+            throw new VnBizError('Cannot add promotion when order is not in draft', 'invalid_status');
+        }
+    })
+    ->db_begin_update(function (&$context) {
+        $old_model = $context['old_model'];
+        $productorder = vnbiz_model_find_one('productorder', ['id' => $old_model['productorder_id']]);
+        if ($productorder['status'] !== 'draft') {
+            throw new VnBizError('Cannot update promotion when order is not in draft', 'invalid_status');
+        }
+    })
 ;
+
+//
+// vnbiz_add_action('service_db_init_default', function (&$context) {

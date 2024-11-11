@@ -350,6 +350,8 @@ trait VnBiz_sql
                 }
             }
 
+            // TODO: $limit, $offset is not supported?
+
             if (sizeof($missed_ids) == 0) {
                 L()->debug('db_fetch(): all from catch', $missed_ids);
                 return $cached_rows;

@@ -10,6 +10,7 @@ class Model
 {
 	use \Model_event;
 	use \vnbiz_trait_datascope;
+	use \vnbiz_trait_editing_by;
 	use \vnbiz_trait_s3_file;
 	use \Model_permission;
 
@@ -1471,7 +1472,12 @@ class Model
 		return $this;
 	}
 
-	function ref($field_name, $ref_model_name)
+	/**
+	 * @param string $field_name
+	 * @param string $ref_model_name
+	 * @param callable $fn_permission_check returns true == has permission
+	 */
+	function ref($field_name, $ref_model_name, $fn_permission_check = null)
 	{
 		$model_name = $this->schema->model_name;
 
@@ -1516,15 +1522,47 @@ class Model
 		});
 
 		// with web_before_create & web_before_update, validate if the ref is valid (user has permissions & ref model exists)
-		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name) {
+		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name, $fn_permission_check) {
 			if (isset($context['model']) && isset($context['model'][$field_name])) {
 				$ref_id = $context['model'][$field_name];
-
-
 
 				if ($ref_id === '') {
 					unset($context['model'][$field_name]);
 					return;
+				}
+
+				$model = vnbiz_model_find_one($ref_model_name, [
+					'id' => $ref_id
+				]);
+				if ($model) {
+					return;
+				} else {
+					throw new VnBizError("Invalid $field_name, model doesn't exist", 'invalid_model');
+				}
+			}
+		};
+
+		$this->db_before_create($assure_ref_id);
+		$this->db_before_update($assure_ref_id);
+
+
+		$check_ref_permission = function () use ($field_name, $ref_model_name, $fn_permission_check) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				$ref_id = $context['model'][$field_name];
+
+				if ($ref_id === '') {
+					unset($context['model'][$field_name]);
+					return;
+				}
+
+				if ($fn_permission_check) {
+					if ($fn_permission_check($ref_id)) {
+						return;
+					} else {
+						throw new VnBizError("Invalid $field_name, missing permissions", 'permission', [
+							$field_name => 'Missing permissions.'
+						], null, 403);
+					}
 				}
 
 				$find_context = [
@@ -1537,14 +1575,14 @@ class Model
 
 				vnbiz_do_action('web_model_find', $find_context);
 
+				// makesure user has permission to view
 				if (sizeof($find_context['models']) == 0) {
 					throw new VnBizError("Invalid $field_name, model doesn't exist or missing permissions", 'invalid_model');
 				}
 			}
 		};
-
-		$this->web_before_create($assure_ref_id);
-		$this->web_before_update($assure_ref_id);
+		$this->web_before_create($check_ref_permission);
+		$this->web_before_update($check_ref_permission);
 
 		return $this;
 	}
@@ -1767,6 +1805,26 @@ class Model
 		$this->ref('updated_by', 'user');
 
 		$this->web_readonly('created_by', 'updated_by');
+
+		$this->web_before_create(function (&$context) {
+			$user = vnbiz_user();
+
+			if ($user) {
+				$context['model']['created_by'] = $user['id'];
+			} else {
+				unset($context['model']['created_by']);
+			}
+		});
+
+		$this->web_before_update(function (&$context) {
+			$user = vnbiz_user();
+
+			if ($user) {
+				$context['model']['updated_by'] = $user['id'];
+			} else {
+				unset($context['model']['created_by']);
+			}
+		});
 
 		return $this;
 	}

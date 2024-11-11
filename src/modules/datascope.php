@@ -112,8 +112,8 @@ trait vnbiz_trait_datascope
             }
         };
 
-        $this->db_before_create($check_write_permissions);
-        $this->db_before_update($check_write_permissions);
+        $this->web_before_create($check_write_permissions);
+        $this->web_before_update($check_write_permissions);
 
         $check_find_permissions = function (&$context) use ($field_name, $fn_read_permissions) {
             if (vnbiz_user_has_permissions('super')) {

@@ -22,6 +22,7 @@ include __DIR__ . '/modules/redis.php';
 include __DIR__ . '/modules/datascope.php';
 include __DIR__ . '/modules/s3.php';
 include __DIR__ . '/modules/sql.php';
+include __DIR__ . '/modules/editing_by.php';
 include __DIR__ . '/modules/user.php';
 include __DIR__ . '/modules/usermark.php';
 include __DIR__ . '/modules/template.php';

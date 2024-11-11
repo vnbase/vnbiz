@@ -48,7 +48,7 @@ $GLOBALS['VNBIZ_ERRORLOGHANDLER'] = $VNBIZ_ERRORLOGHANDLER;
  * @version 1.0.0
  */
 function vnbiz_debug_enabled() {
-    return isset($_SERVER['VNBIZ_DEBUG']) && $_SERVER['VNBIZ_DEBUG'] == true || isset($_GET['VNBIZ_DEBUG']) && $_GET['VNBIZ_DEBUG'] === 'true';
+    return isset($_SERVER['VNBIZ_DEBUG']) && $_SERVER['VNBIZ_DEBUG'] === 'true' || isset($_GET['VNBIZ_DEBUG']) && $_GET['VNBIZ_DEBUG'] === 'true';
 }
 
 if (vnbiz_debug_enabled()) {
