@@ -83,7 +83,7 @@ trait VnBiz_sql
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
             }
-            if (!is_array($context['model'])) {
+            if (!is_array($context['model']) || sizeof($context['model']) == 0) {
                 throw new VnBizError('Missing model', 'invalid_context');
             }
             if (!isset($context['filter']) || !isset($context['filter']['id'])) {
@@ -124,6 +124,10 @@ trait VnBiz_sql
                 $context['old_model'] = $old_model;
                 $context['old_model']['@model_name'] = $model_name;
 
+                $old_id = $context['old_model']['id'];
+                $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
+                $cached_key = "$ns:$model_name:$old_id";
+
                 $skip_db_actions ?: $this->actions()->do_action("db_before_update_$model_name", $context);
 
                 L()->debug('model_update: id:' . $old_model['id'], $context['model']);
@@ -138,9 +142,6 @@ trait VnBiz_sql
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
 
-                $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
                 vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();
@@ -301,6 +302,7 @@ trait VnBiz_sql
         $sql_query_params = &$context['sql_query_params'];
         $sql_query_order = vnbiz_get_var($context['sql_query_order'], '');
         $lock_query = vnbiz_get_var($context['sql_lock_query'], '');
+        $in_trans = vnbiz_get_key($context, 'in_trans', false);
 
         $limit = vnbiz_get_var($meta['limit'], 100);
         $offset = vnbiz_get_var($meta['offset'], 0);
@@ -312,6 +314,7 @@ trait VnBiz_sql
         // fetch from cache when filter by [id] or [id, ns] and no other conditions
         if (
             (
+                !$in_trans &&
                 isset($context['filter']) &&  (
                     (sizeof($context['filter']) == 1 && isset($context['filter']['id']) && !empty($context['filter']['id']))
                     || (sizeof($context['filter']) == 2 && isset($context['filter']['id']) && !empty($context['filter']['id']) && isset($context['filter']['ns']))
@@ -344,7 +347,7 @@ trait VnBiz_sql
 
             // load missed rows from db
             $missed_ids = [];
-            foreach ($ids as $index=>$id) {
+            foreach ($ids as $index => $id) {
                 if (!$cache_result[$index]) {
                     $missed_ids[] = $id;
                 } else {
@@ -553,6 +556,7 @@ trait VnBiz_sql
                 $context['old_model'] = $rows[0];
                 $context['old_model']['@model_name'] = $model_name;
 
+
                 //TODO: refactor this
                 // TODO: Why we can't use $context['fitler']['ns]
 
@@ -563,15 +567,18 @@ trait VnBiz_sql
                 // }
 
                 $skip_db_actions ?: $this->actions()->do_action("db_before_delete_$model_name", $context);
+
+                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+
                 R::trashBatch($model_name, vnbiz_get_ids($rows));
+
                 $skip_db_actions ?: $this->actions()->do_action("db_after_delete_$model_name", $context);
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
 
-                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
                 vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();

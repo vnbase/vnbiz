@@ -62,6 +62,7 @@ class Actions
 
             if (vnbiz_debug_enabled()) {
                 array_pop($this->stack);
+                L_withName(join('>', $this->stack));
             }
         }
     }
@@ -74,5 +75,10 @@ class Actions
                 call_user_func_array($func, [&$context]);
             }
         }
+    }
+
+    public function getRegisteredActions()
+    {
+        return $this->actions;
     }
 }

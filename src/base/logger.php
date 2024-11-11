@@ -12,7 +12,7 @@ $dateFormat = "Y-m-d\TH:i:sP";
 // the default output format is "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 // we now change the default output format according to our needs.
 // $output = "%datetime% %level_name% : %message% %context% %extra%\n";
-$output = "%level_name% %message% %context% %extra% | %channel%\n";
+$output = "%level_name% %channel%: %message% %context% %extra%\n";
 
 // finally, create a formatter
 $formatter = new LineFormatter($output, $dateFormat);

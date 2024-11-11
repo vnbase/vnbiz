@@ -261,7 +261,7 @@ vnbiz_model_add('productorderpromotion')
         $old_model = $context['old_model'];
         $productorder = vnbiz_model_find_one('productorder', ['id' => $old_model['productorder_id']]);
         if ($productorder['status'] !== 'draft') {
-            throw new VnBizError('Cannot update promotion when order is not in draft', 'invalid_status');
+            throw new VnBizError('Cannot update promotion when order is not in draft, current=' . $productorder['status'], 'invalid_status');
         }
     })
 ;

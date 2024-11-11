@@ -60,6 +60,7 @@ trait VnBiz_restful
 
         try {
             vnbiz_do_action('web_before', $context);
+            L()->info('<<<', $context);
 
             $action = vnbiz_get_var($context['action'], '');
             switch ($action) {
@@ -146,6 +147,7 @@ trait VnBiz_restful
         };
 
 
+        L()->info('>>>', $context);
         vnbiz_do_action('web_after', $context);
         return $result;
     }
