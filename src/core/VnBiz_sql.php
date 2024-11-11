@@ -148,7 +148,7 @@ trait VnBiz_sql
                 throw $e;
             }
 
-            $this->actions()->do_action("db_after_commit_update_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_commit_update_$model_name", $context);
 
             $skip_db_actions ?: $this->actions()->do_action('db_after_update', $context);
         });
@@ -507,8 +507,10 @@ trait VnBiz_sql
     {
         $this->actions()->add_action_one('model_delete', function (&$context) {
             L()->debug('model_delete', $context);
+            $meta = vnbiz_get_var($context['meta'], []);
+            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
 
-            $this->actions()->do_action('db_before_delete', $context);
+            $skip_db_actions ?: $this->actions()->do_action('db_before_delete', $context);
 
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
@@ -560,9 +562,9 @@ trait VnBiz_sql
                 //     }
                 // }
 
-                $this->actions()->do_action("db_before_delete_$model_name", $context);
+                $skip_db_actions ?: $this->actions()->do_action("db_before_delete_$model_name", $context);
                 R::trashBatch($model_name, vnbiz_get_ids($rows));
-                $this->actions()->do_action("db_after_delete_$model_name", $context);
+                $skip_db_actions ?: $this->actions()->do_action("db_after_delete_$model_name", $context);
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
@@ -577,9 +579,9 @@ trait VnBiz_sql
                 throw $e;
             }
 
-            $this->actions()->do_action("db_after_commit_delete_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_commit_delete_$model_name", $context);
 
-            $this->actions()->do_action('db_after_delete', $context);
+            $skip_db_actions ?: $this->actions()->do_action('db_after_delete', $context);
         });
     }
     private function add_action_model_count()
@@ -588,7 +590,8 @@ trait VnBiz_sql
             L()->debug('model_count', $context);
 
             $meta = vnbiz_get_var($context['meta'], []);
-            $this->actions()->do_action('db_before_count', $context);
+            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
+            $skip_db_actions ?: $this->actions()->do_action('db_before_count', $context);
 
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
@@ -601,7 +604,7 @@ trait VnBiz_sql
             vnbiz_do_action('sql_gen_filter', $context);
             vnbiz_do_action('sql_gen_order', $context);
 
-            $this->actions()->do_action("db_before_count_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_before_count_$model_name", $context);
 
             $sql_query_conditions = &$context['sql_query_conditions'];
             $sql_query_params = &$context['sql_query_params'];
@@ -614,6 +617,8 @@ trait VnBiz_sql
                 $sql_query_conditions = ' WHERE ' . $sql_query_conditions;
             }
 
+            $sql_query = 'SELECT COUNT(*) FROM ' . $model_name . $sql_query_conditions . ' ' . $lock_query;
+            L()->debug('model_count: ' . $sql_query, $sql_query_params);
             $count = R::getCell('SELECT COUNT(*) FROM ' . $model_name . $sql_query_conditions . ' ' . $lock_query, $sql_query_params);
             $context['count'] = $count;;
 
@@ -627,9 +632,9 @@ trait VnBiz_sql
 
             // $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
 
-            $this->actions()->do_action("db_after_count_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_count_$model_name", $context);
 
-            $this->actions()->do_action('db_after_count', $context);
+            $skip_db_actions ?: $this->actions()->do_action('db_after_count', $context);
         });
     }
 

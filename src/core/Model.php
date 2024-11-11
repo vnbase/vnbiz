@@ -114,7 +114,7 @@ class Model
 					], [
 						$field_name => $origin_model[$origin_field_name]
 					], [
-						'skip_db_actions' => true
+						'skip_db_actions' => false
 					], true);
 				}
 			}

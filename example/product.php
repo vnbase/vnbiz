@@ -98,22 +98,22 @@ vnbiz_model_add('productpromotion')
     ->author()
     ->has_v()
     ->uint('max_redeem')
-    ->db_begin_update(function (&$context) {
+    ->back_ref_count('redeem_count', 'productorderpromotion', 'productpromotion_id', ['productorder_status' => ['ordered']])
+    ->db_end_update(function (&$context) {
+        $model = $context['model'];
         $old_model = $context['old_model'];
-        $old_max_redeem = $old_model['max_redeem'];
-        if (isset($context['model']['max_redeem'])) {
-            $new_max_redeem = $context['model']['max_redeem'];
-            if ($new_max_redeem == 0 || $new_max_redeem > $old_max_redeem) {
-            } else {
-                throw new VnBizError('Invalid max_redeem, max_redeem must be 0 or higher than the current value, currrent:' . $old_max_redeem, 'invalid_model');
-            }
+        $max_redeem = isset($model['max_redeem']) ? $model['max_redeem'] : $old_model['max_redeem'];
+        if ($max_redeem == 0) {
+            return;
+        }
+        if (isset($model['redeem_count']) && $model['redeem_count'] > $max_redeem) {
+            throw new VnBizError('Invalid redeem_count, redeem_count must be less than or equal to max_redeem:' . $max_redeem, 'redeem_exceed');
         }
     })
-    ->back_ref_count('redeem_count', 'productorderpromotion', 'productpromotion_id', ['productorder_status' => ['ordered']])
     ->has_editing_by()
-    ->require('created_by', 'product_id', 'promotion_code')
+    ->require('created_by', 'promotion_code')
     ->unique('unique_promotion_code', ['promotion_code'])
-    ->index('fast', ['product_id', 'status'])
+    // ->index('fast', ['product_id', 'status'])
     ->text_search('name', 'description')
     ->write_permission_or(['productpromotion_write'], function (&$context) {
         return false;
