@@ -170,8 +170,7 @@ final class ProductTest extends TestCase
             'display_name' => 'Shooper'
         ]);
 
-        // create order & redeem promotion
-
+        // create order & redeem promotion but not in active status
         $order = $client->model_create_get('productorder', [
             'contact_id' => $contact['id'],
             'marketing_source_id' => 'facebook'
@@ -193,6 +192,8 @@ final class ProductTest extends TestCase
         $this->assertTrue($status == 400, 'Cannot add promotion when not in active status');
         $this->assertTrue($body['code'] == 'invalid_status', 'Cannot add promotion when not in active status');
 
+        // create order & redeem promotion normally
+        echo "XXXX " . $promotion['id'] . "\n";;
 
         $used_productorderpromotion = $client->model_create_get('productorderpromotion', [
             'productorder_id' => $order['id'],
@@ -212,6 +213,7 @@ final class ProductTest extends TestCase
         $used_productorderpromotion = $body['models'][0];
         
         $this->assertEquals(1, $used_productorderpromotion['@productpromotion_id']['redeem_count'], 'redeem count increased');
+        $this->assertEquals('active', $used_productorderpromotion['@productpromotion_id']['status'], 'in active status');
 
         // create order & redeem promotion but exceed max redeem
 
@@ -229,6 +231,12 @@ final class ProductTest extends TestCase
             'quantity' => 2
         ]);
 
+        $same_promotion = $client->model_find_one('productpromotion', [
+            'promotion_code' => $promotion_code
+        ], ['ref' => true]);
+        $this->assertTrue($promotion['id'] == $same_promotion['id'], 'same id');
+        $this->assertEquals('active', $same_promotion['status'], 'must be active');
+
         $used_productorderpromotion = $client->model_create_get('productorderpromotion', [
             'productorder_id' => $order['id'],
             'productpromotion_id' => $promotion['id'],
@@ -240,12 +248,7 @@ final class ProductTest extends TestCase
         ], [
             'status' => 'ordered'
         ]);
-
-        [$status, $body] = $admin->model_find('productorderpromotion', [
-            'id' => $used_productorderpromotion['id']
-        ], ['ref' => true]);
-
-        // $this->assertEquals(400, $status, 'Cannot add promotion when exceed max redeem');
+        $this->assertEquals(400, $status, 'Cannot add promotion when exceed max redeem');
     }
 
 }

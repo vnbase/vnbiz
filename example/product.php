@@ -100,6 +100,7 @@ vnbiz_model_add('productpromotion')
     ->uint('max_redeem')
     ->back_ref_count('redeem_count', 'productorderpromotion', 'productpromotion_id', ['productorder_status' => ['ordered']])
     ->db_end_update(function (&$context) {
+        L()->debug('productpromotion db_end_update', $context);
         $model = $context['model'];
         $old_model = $context['old_model'];
         $max_redeem = isset($model['max_redeem']) ? $model['max_redeem'] : $old_model['max_redeem'];
@@ -107,7 +108,9 @@ vnbiz_model_add('productpromotion')
             return;
         }
         if (isset($model['redeem_count']) && $model['redeem_count'] > $max_redeem) {
-            throw new VnBizError('Invalid redeem_count, redeem_count must be less than or equal to max_redeem:' . $max_redeem, 'redeem_exceed');
+            throw new VnBizError('Invalid redeem_count, redeem_count must be [less than or equal] to max_redeem:' . $max_redeem, 'redeem_exceed', [
+                'redeem_count' => $model['redeem_count']
+            ], null, 400);
         }
     })
     ->has_editing_by()

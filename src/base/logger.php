@@ -1,6 +1,7 @@
 <?php
 
 use Monolog\Formatter\LineFormatter;
+use Monolog\Formatter\NormalizerFormatter;
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Level;
 use Monolog\Logger;

@@ -665,7 +665,7 @@ class Model
 				], [
 					"number_of_$mark_type" => $count
 				], [
-					'skip_db_actions' => true
+					'skip_db_actions' => false
 				]);
 			}
 		});
@@ -694,7 +694,7 @@ class Model
 				], [
 					"number_of_$mark_type" => $count
 				], [
-					'skip_db_actions' => true
+					'skip_db_actions' => false
 				]);
 			}
 		});
@@ -1346,12 +1346,15 @@ class Model
 	public function enum($field_name, $options, $default_value = null)
 	{
 		vnbiz_assure_valid_name($field_name);
+
+		$this->default([$field_name => $default_value]);
+
 		$this->schema->add_field($field_name, 'enum');
 		$this->schema->set_field($field_name, [
 			'options' => $options
 		]);
 
-		$func_validate_enum = function (&$context) use ($field_name, $default_value) {
+		$func_validate_enum = function (&$context) use ($field_name) {
 			$model = &$context['model'];
 
 			if (isset($model[$field_name])) {
@@ -1360,8 +1363,6 @@ class Model
 				if (!is_string($value)) {
 					throw new VnBizError("$field_name must be enum<string>", 'invalid_model');
 				}
-			} else {
-				$model[$field_name] = $default_value;
 			}
 		};
 
@@ -1763,18 +1764,13 @@ class Model
 				$count_filter = array_merge($filter, [$ref_field_name => $id]);
 				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
 				L()->debug('RECOUNT increase count=' . $count, $count_filter);
-				try {
-					vnbiz_model_update($model_name, [
-						'id' => $id
-					], [
-						$field_name => $count
-					], [
-						'skip_db_actions' => true
-					], true);
-				} catch (\Exception $e) {
-					throw $e;
-					// trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
-				}
+				vnbiz_model_update($model_name, [
+					'id' => $id
+				], [
+					$field_name => $count
+				], [
+					'skip_db_actions' => false
+				], true);
 			}
 		};
 
@@ -1804,17 +1800,13 @@ class Model
 					$count_filter = array_merge($filter, [$ref_field_name => $id]);
 					$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
 					L()->debug('RECOUNT count=' . $count, $count_filter);
-					try {
-						vnbiz_model_update($model_name, [
-							'id' => $id
-						], [
-							$field_name => $count
-						], [
-							'skip_db_actions' => true
-						], true);
-					} catch (\Exception $e) {
-						throw $e;
-					}
+					vnbiz_model_update($model_name, [
+						'id' => $id
+					], [
+						$field_name => $count
+					], [
+						'skip_db_actions' => false
+					], true);
 				} else {
 					$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
 				}
@@ -1824,19 +1816,16 @@ class Model
 			// 
 			if ($old_id && $old_id !== $id) {
 				$count_filter = array_merge($filter, [$ref_field_name => $old_id]);
+
 				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
-				L()->debug('RECOUNT count=' . $count, $count_filter);
-				try {
-					vnbiz_model_update($model_name, [
-						'id' => $old_id
-					], [
-						$field_name => $count
-					], [
-						'skip_db_actions' => true
-					], true);
-				} catch (\Exception $e) {
-					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
-				}
+
+				vnbiz_model_update($model_name, [
+					'id' => $old_id
+				], [
+					$field_name => $count
+				], [
+					'skip_db_actions' => false
+				], true);
 			}
 		};
 
@@ -1882,29 +1871,29 @@ class Model
 
 		$this->web_readonly('created_by', 'updated_by');
 
-		//remove all author fields if exists. definition must be after;
+
 		$func_set_create_author = function (&$context) {
 			unset($context['model']['updated_by']);
 
 			$user = vnbiz_user();
 
-			if ($user) {
+			if ($user && !isset($context['model']['created_by'])) {
 				$context['model']['created_by'] = $user['id'];
 			}
 		};
 		$this->db_before_create($func_set_create_author);
 
-		$func_set_update_author = function (&$context) {
-			unset($context['model']['created_by']);
+		// $func_set_update_author = function (&$context) {
+		// 	unset($context['model']['created_by']);
 
-			$user = vnbiz_user();
+		// 	$user = vnbiz_user();
 
-			if ($user) {
-				$context['model']['updated_by'] = $user['id'];
-			}
-		};
+		// 	if ($user) { // !important: if user is not logged in, we don't update updated_by
+		// 		$context['model']['updated_by'] = $user['id'];
+		// 	}
+		// };
 
-		$this->db_before_update($func_set_update_author);
+		// $this->db_before_update($func_set_update_author);
 
 		$this->web_before_create(function (&$context) {
 			$user = vnbiz_user();
@@ -1914,10 +1903,13 @@ class Model
 			} else {
 				unset($context['model']['created_by']);
 			}
+
+			unset($context['model']['updated_by']);
 		});
 
 		$this->web_before_update(function (&$context) {
 			$user = vnbiz_user();
+			unset($context['model']['created_by']);
 
 			if ($user) {
 				$context['model']['updated_by'] = $user['id'];

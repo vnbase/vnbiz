@@ -2,6 +2,7 @@
 // new trait named Model_permission
 namespace VnBiz;
 
+use Error;
 use Exception, R;
 use RedBeanPHP\RedException\SQL as SQLException;
 use SimpleXMLElement;
@@ -119,8 +120,10 @@ trait VnBiz_restful
                             http_response_code(400);
                         }
                     } else {
+                        $result['code'] = "invalid_action";
                         $result['message'] = "No action name '$action'";
                     }
+
             }
         } catch (VnbizError $e) {
             http_response_code($e->http_status());
@@ -146,9 +149,13 @@ trait VnBiz_restful
             ];
         };
 
+        if (!isset($result['code'])) {
+            throw new Error("No code in response");
+        }
 
-        L()->info('>>>', $context);
-        vnbiz_do_action('web_after', $context);
+
+        L()->info('>>>', $result);
+        vnbiz_do_action('web_after', $result);
         return $result;
     }
 
