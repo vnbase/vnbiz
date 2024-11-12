@@ -78,8 +78,7 @@ function vnbiz_redis_get_arrays($keys)
 // Redis key-value, ttl default is 1 hour
 function vnbiz_redis_set_array($key, $array, $ttl_seconds = 3600)
 {
-    // var_dump("REDIS", $key, $array);
-    // echo "REDIS: SET $key\n";
+    L()->debug("REDIS set " . $key);
     return vnbiz_redis()->setEx($key, $ttl_seconds, json_encode($array));
 }
 
@@ -95,10 +94,12 @@ function vnbiz_redis_set_arrays($key_array, $ttl_seconds = 3600)
 
 function vnbiz_redis_del($key)
 {
+    L()->debug("REDIS del " . $key);
     return vnbiz_redis()->unlink($key);
 }
 
 function vnbiz_redis_dels($keys)
 {
+    L()->debug("REDIS del ", $keys);
     return vnbiz_redis()->unlink($keys);
 }

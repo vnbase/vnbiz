@@ -5,7 +5,6 @@ if (class_exists('Client')) {
 }
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-error_log("You messed up!", 3, "./test-error.log");
 class Client
 {
     private $client_access_token = null;
@@ -18,12 +17,11 @@ class Client
         // var_dump($form);
         $action = isset($form['action']) ? $form['action'] : '[action]';
         $model_name = isset($form['model_name']) ? $form['model_name'] : '[model_name]';
-        // $filter = isset($form['filter']) ? json_encode($form['filter']) : '[filter]';
-        // $model = isset($form['model']) ? json_encode($form['model']) : '[model]';
-        print_r("< $action ON $model_name $payload \n");
+        // print_r("< $action ON $model_name $payload \n");
     }
     public function log_receive($body)
     {
+        $has_error = isset($body['stack']) && $body['stack'] !== 'stack';
         $code = isset($body['code']) ? $body['code'] : '[code]';
         $message = isset($body['message']) ? $body['message'] : '[message]';
         $models = isset($body['models']) ? json_encode($body['models'], JSON_PRETTY_PRINT) : '';
@@ -31,6 +29,9 @@ class Client
         $filter = isset($body['filter']) ? json_encode($body['filter'], JSON_PRETTY_PRINT) : '';
         $old_model = isset($body['old_model']) ? json_encode($body['old_model'], JSON_PRETTY_PRINT) : '';
 
+        if (!$has_error) {
+            return;
+        }
         print_r(">>> $code, message:$message, model:$model,  models:$models, old_model:$old_model, filter:$filter \n");
         if ($code !== 'success') {
             $error = isset($body['error']) ? $body['error'] : '[error]';
@@ -45,9 +46,9 @@ class Client
             'file' => new CURLFile($filePath)  // Attach the file
         ];
      */
-    public function REQUEST($formData, $headers = [], $url = 'http://localhost:8888/test/')
+    public function REQUEST($formData, $headers = [], $url = 'http://localhost:8080/test/')
     {
-        $url = 'http://localhost:8888/test/?debug=true&ns=' . vnbiz_encrypt_id(66);
+        $url = 'http://nginx:8080/test/?debug=true&ns=' . vnbiz_encrypt_id(76);
         if ($this->client_access_token) {
             $headers[] = 'Content-Type: multipart/form-data';
             $headers[] = 'Authorization: Bearer ' . $this->client_access_token;
@@ -130,6 +131,18 @@ class Client
             $payload["meta[$key]"] = $value;
         }
         return $this->REQUEST($payload);
+    }
+
+    public function model_find_one($model_name, $filter = [], $meta = [])
+    {
+        [$status, $body] = $this->model_find($model_name, $filter, $meta);
+        if ($status !== 200 || $body['code'] !== 'success') {
+            throw new Error("Model Find Failed: " . json_encode($body));
+        }
+        if (isset($body['models']) && sizeof($body['models']) > 0) {
+            return $body['models'][0];
+        }
+        return null;
     }
 
     public function model_create($model_name, $model)

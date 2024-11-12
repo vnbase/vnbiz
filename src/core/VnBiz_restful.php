@@ -2,6 +2,7 @@
 // new trait named Model_permission
 namespace VnBiz;
 
+use Error;
 use Exception, R;
 use RedBeanPHP\RedException\SQL as SQLException;
 use SimpleXMLElement;
@@ -60,6 +61,7 @@ trait VnBiz_restful
 
         try {
             vnbiz_do_action('web_before', $context);
+            L()->info('<<<', $context);
 
             $action = vnbiz_get_var($context['action'], '');
             switch ($action) {
@@ -118,8 +120,10 @@ trait VnBiz_restful
                             http_response_code(400);
                         }
                     } else {
+                        $result['code'] = "invalid_action";
                         $result['message'] = "No action name '$action'";
                     }
+
             }
         } catch (VnbizError $e) {
             http_response_code($e->http_status());
@@ -132,6 +136,11 @@ trait VnBiz_restful
                 'stack' => $e->getTraceAsString()
             ];
         } catch (Exception $e) {
+            L()->error($e->getMessage(), [
+                'context' => $context,
+                'stack' => $e->getTraceAsString()
+            ]);
+
             http_response_code(500);
             $result = [
                 'code' => 'error',
@@ -140,8 +149,13 @@ trait VnBiz_restful
             ];
         };
 
+        if (!isset($result['code'])) {
+            throw new Error("No code in response");
+        }
 
-        vnbiz_do_action('web_after', $context);
+
+        L()->info('>>>', $result);
+        vnbiz_do_action('web_after', $result);
         return $result;
     }
 
@@ -154,7 +168,16 @@ trait VnBiz_restful
             error_log($output);
         }
 
-        unset($result['params']);
+        if (!vnbiz_debug_enabled()) {
+            unset($result['params']);
+            unset($result['sql_query_conditions']);
+            unset($result['sql_query_params']);
+            unset($result['sql_lock_query']);
+            unset($result['sql_query']);
+            unset($result['sql_params']);
+            unset($result['sql_query_order']);
+            unset($result['stack']);
+        }
 
         header('Content-Type: application/json');
         echo json_encode($result, JSON_UNESCAPED_SLASHES);

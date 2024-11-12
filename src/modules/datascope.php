@@ -51,15 +51,15 @@ function vnbiz_current_user_inaccessable_datascope($scopes)
 
 trait vnbiz_trait_datascope
 {
-    public $has_datascope = false;    //TODO
+    public $has_datascope = false;
 
-    public function has_datascope()
+    public function has_datascope($fn_read_permissions = null, $fn_write_permissions = null)
     {
         $field_name = 'datascope';
 
         $this->schema->add_field($field_name, 'datascope');
 
-        $func_validate_datascope = function (&$context) use ($field_name) {
+        $func_validate_datascope_format = function (&$context) use ($field_name) {
             if (vnbiz_has_key($context, ['model', 'datascope'])) {
                 $model = &$context['model'];
 
@@ -77,10 +77,19 @@ trait vnbiz_trait_datascope
             }
         };
 
-        $this->db_before_create($func_validate_datascope);
-        $this->db_before_update($func_validate_datascope);
+        $this->db_before_create($func_validate_datascope_format);
+        $this->db_before_update($func_validate_datascope_format);
 
-        $func_validate_datascope_permissions = function (&$context) use ($field_name) {
+        $check_write_permissions = function (&$context) use ($field_name, $fn_write_permissions) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
+
+            if ($fn_write_permissions) {
+                if ($fn_write_permissions($context)) {
+                    return;
+                }
+            }
 
             if (vnbiz_has_key($context, ['model', 'datascope'])) {
                 $model = &$context['model'];
@@ -103,12 +112,18 @@ trait vnbiz_trait_datascope
             }
         };
 
-        $this->db_before_create($func_validate_datascope_permissions);
-        $this->db_before_update($func_validate_datascope_permissions);
+        $this->web_before_create($check_write_permissions);
+        $this->web_before_update($check_write_permissions);
 
-        $valiate_filter = function (&$context) use ($field_name) {
+        $check_find_permissions = function (&$context) use ($field_name, $fn_read_permissions) {
             if (vnbiz_user_has_permissions('super')) {
                 return;
+            }
+
+            if ($fn_read_permissions) {
+                if ($fn_read_permissions($context)) {
+                    return;
+                }
             }
 
             vnbiz_user_or_throw(); // must login
@@ -144,9 +159,9 @@ trait vnbiz_trait_datascope
                 $context['filter'][$field_name] = $scopes;
             }
         };
-        $this->web_before_find($valiate_filter);
-        $this->web_before_update($valiate_filter);
-        $this->web_before_delete($valiate_filter);
+        $this->web_before_find($check_find_permissions);
+        $this->web_before_update($check_find_permissions);
+        $this->web_before_delete($check_find_permissions);
 
         return $this;
     }

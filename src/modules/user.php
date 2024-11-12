@@ -145,7 +145,6 @@ function vnbiz_init_module_user()
         ->unique('user_unique_email', ['email'])
         ->unique('user_unique_username', ['username'])
         ->unique('user_unique_fuid', ['fuid'])
-        ->require('email')
         ->no_delete()
         ->text_search('alias', 'first_name', 'last_name', 'email', 'note', 'username')
         ->read_field_permission_or(['email', 'fuid', 'status', 'first_name', 'last_name'], ['super', 'user_read'], function (&$model) {
@@ -207,7 +206,6 @@ function vnbiz_init_module_user()
     ;
 
     vnbiz_add_action('web_before', function (&$context) {
-
         $token = vnbiz_getBearerToken();
         if (!$token) {
             return;
@@ -227,6 +225,11 @@ function vnbiz_init_module_user()
         if (isset($arr['per'])) {
             $GLOBALS['vnbiz_user_permissions_scope'] = $arr['per_s'];
         }
+
+        if (vnbiz_debug_enabled()) {
+            L_withName('user:' . $user_id);
+        }
+
     });
 
     vnbiz_add_action("service_user_login", function (&$context) {

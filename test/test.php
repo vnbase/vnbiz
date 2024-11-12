@@ -8,7 +8,8 @@ include_once(__DIR__ . "/../src/vnbiz.php");
 vnbiz()
 	->init_app('test', 'THE_TK_SECRET')
 	// ->init_db_mysql('10.10.0.3', 'vnbase_test', 'vnbase_test', 'vnbase_test')
-	->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
+	// ->init_db_mysql('mysql8', 'root', 'rootpass', 'vnbiz_dev')
+	->init_db_mysql($_SERVER['VNBIZ_SQL_HOST'], $_SERVER['VNBIZ_SQL_USER'], $_SERVER['VNBIZ_SQL_PASSWORD'], $_SERVER['VNBIZ_SQL_DB'])
 	->init_aws('minioroot', 'rootpass', 'ap-southeast-1', 'vnbizbucket', "minio:9000", 'http')
 	->init_oauth_google('1065936865511-k69f16m125i0r2f5vdtc1dau7kcrm71f.apps.googleusercontent.com', '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')
 	->init_redis('redis7')
@@ -22,22 +23,24 @@ vnbiz()
 	->init_modules(
 		'systemconfig',
 		'user',
+		'datascope',
+		'monitor',
+		's3',
+		'email',
+		'oauth',
 		'usermark',
 		'comment',
 		'tag',
 		'review',
 		'history',
-		's3',
 		'template',
-		'email',
-		'oauth',
 		'notification',
 		'redis',
-		'monitor',
-		'useractivity',
-		'datascope'
+		'useractivity'
 	);
 
+include_once(__DIR__ . "/../example/product.php");
+include_once(__DIR__ . "/../example/web.php");
 include_once(__DIR__ . "/../example/types.php");
 
 

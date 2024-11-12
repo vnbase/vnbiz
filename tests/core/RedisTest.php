@@ -9,12 +9,15 @@ use PHPUnit\Framework\TestCase;
 final class RedisTest extends TestCase
 {
     public static function setUpBeforeClass(): void {}
+
     public function test_redis_find_cache()
     {
         $client = new Client();
 
+        $str = vnbiz_unique_text();
+
         [$status, $body] = $client->model_create('testmodela', [
-            'string_1' => 'string_1',
+            'string_1' => $str,
 
         ]);
         $this->assertEquals(200, $status, 'create returns 200');
@@ -30,11 +33,9 @@ final class RedisTest extends TestCase
 
         $this->assertNotNull($model, 'has response model');
 
-        var_dump($model);
-
         $this->assertIsString($model['id'], 'model has id');
-        $this->assertIsNumeric($model['created_at'], 'created_at is set');
 
-        $this->assertTrue('string_1' === $model['string_1'], 'string_1 is set');
+        $this->assertIsNumeric($model['created_at'], 'created_at is set');
+        $this->assertTrue($str === $model['string_1'], 'string_1 is set');
     }
 }

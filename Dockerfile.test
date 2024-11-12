@@ -1,4 +1,4 @@
-FROM docker.realnam.com/vnbiz-base:latest
+FROM docker.realnam.com/vnbiz-base:v1
 
 # USER www-data
 
@@ -8,11 +8,8 @@ RUN composer install
 
 COPY . .
 
-COPY config/nginx.conf /etc/nginx/http.d/default.conf
-COPY config/supervisord.conf /etc/supervisord.conf
 COPY config/logging.conf /usr/local/etc/php-fpm.d/logging.conf
 COPY config/php.ini-development /usr/local/etc/php/php.ini
-# COPY config/php.ini-production /usr/local/etc/php/php.ini
+COPY config/php-fpm.conf /usr/local/etc/php-fpm.conf
+COPY config/www.conf /usr/local/etc/php-fpm.d/www.conf
 
-
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

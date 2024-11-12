@@ -1,0 +1,1 @@
+docker exec --user root vnbiz-backend-1 vendor/bin/phpunit --configuration phpunit.xml

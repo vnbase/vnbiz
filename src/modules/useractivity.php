@@ -130,52 +130,52 @@ function vnbiz_init_module_useractivity()
         ->index('fast', ['created_at', 'user_id', 'action', 'model_name'])
     ;
 
-    vnbiz_add_action('web_before', function (&$context) {
-        $GLOBALS['start_at'] = round(microtime(true) * 1000);
-    });
-    vnbiz_add_action('web_after', function (&$context) {
-        $user = vnbiz_user();
-        if (!$user) {
-            return;
-        }
-        if (!isset($context['action'])) {
-            return;
-        }
-        $c = [];
-        if (isset($context['filter'])) {
-            $c['filter'] = $context['filter'];
-        }
-        $text_search = null;
-        if (isset($context['meta'])) {
-            $text_search = vnbiz_get_var($context['meta']['text_search']);
-        }
-        $ip = vnbiz_getIPAddress();
-        $browser_info = vnbiz_getBrowserInfo();
-        $browser = $browser_info['name'];
-        $browser_version = $browser_info['version'];
-        $platform = $browser_info['platform'];
-        $process_time = (int) ((round(microtime(true) * 1000)) - $GLOBALS['start_at']);
-        $http_response_code = http_response_code();
-        $request_body_size = (int) vnbiz_get_var($_SERVER['CONTENT_LENGTH'], null);
+    // vnbiz_add_action('web_before', function (&$context) {
+    //     $GLOBALS['start_at'] = round(microtime(true) * 1000);
+    // });
+    // vnbiz_add_action('web_after', function (&$context) {
+    //     $user = vnbiz_user();
+    //     if (!$user) {
+    //         return;
+    //     }
+    //     if (!isset($context['action'])) {
+    //         return;
+    //     }
+    //     $c = [];
+    //     if (isset($context['filter'])) {
+    //         $c['filter'] = $context['filter'];
+    //     }
+    //     $text_search = null;
+    //     if (isset($context['meta'])) {
+    //         $text_search = vnbiz_get_var($context['meta']['text_search']);
+    //     }
+    //     $ip = vnbiz_getIPAddress();
+    //     $browser_info = vnbiz_getBrowserInfo();
+    //     $browser = $browser_info['name'];
+    //     $browser_version = $browser_info['version'];
+    //     $platform = $browser_info['platform'];
+    //     $process_time = (int) ((round(microtime(true) * 1000)) - $GLOBALS['start_at']);
+    //     $http_response_code = http_response_code();
+    //     $request_body_size = (int) vnbiz_get_var($_SERVER['CONTENT_LENGTH'], null);
 
-        vnbiz_model_create('useractivity', [
-            'user_id' => $user['id'],
-            'action' => $context['action'],
-            'model_name' => vnbiz_get_var($context['model_name'], null),
-            'context' => $c,
-            // 'filter_id' => 
-            'ip' => $ip,
-            'text_search' => $text_search,
-            'browser' => $browser,
-            'browser_version' => $browser_version,
-            'platform' => $platform,
-            'process_time' => $process_time,
-            'http_response_code' => $http_response_code,
-            'request_body_size' => $request_body_size,
-            'code' => vnbiz_get_var($context['code'], null),
-            'error' => vnbiz_get_var($context['error'], null),
-            'message' => vnbiz_get_var($context['message'], null),
-            'stack' => vnbiz_get_var($context['stack'], null),
-        ], true);
-    });
+    //     vnbiz_model_create('useractivity', [
+    //         'user_id' => $user['id'],
+    //         'action' => $context['action'],
+    //         'model_name' => vnbiz_get_var($context['model_name'], null),
+    //         'context' => $c,
+    //         // 'filter_id' => 
+    //         'ip' => $ip,
+    //         'text_search' => $text_search,
+    //         'browser' => $browser,
+    //         'browser_version' => $browser_version,
+    //         'platform' => $platform,
+    //         'process_time' => $process_time,
+    //         'http_response_code' => $http_response_code,
+    //         'request_body_size' => $request_body_size,
+    //         'code' => vnbiz_get_var($context['code'], null),
+    //         'error' => vnbiz_get_var($context['error'], null),
+    //         'message' => vnbiz_get_var($context['message'], null),
+    //         'stack' => vnbiz_get_var($context['stack'], null),
+    //     ], true);
+    // });
 }

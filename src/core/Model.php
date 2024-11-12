@@ -3,12 +3,14 @@
 namespace VnBiz;
 
 use Error;
+use VnBiz\VnBizError;
 use R;
 
 class Model
 {
 	use \Model_event;
 	use \vnbiz_trait_datascope;
+	use \vnbiz_trait_editing_by;
 	use \vnbiz_trait_s3_file;
 	use \Model_permission;
 
@@ -78,6 +80,48 @@ class Model
 	public function get_model_field_names()
 	{
 		return array_keys($this->schema->schema);
+	}
+
+	public function copyValue100($field_name, $ref_field_name, $origin_model_name, $origin_field_name)
+	{
+		$model_name = $this->schema->model_name;
+
+		$origin_model_schema = vnbiz_model($origin_model_name);
+		if (!isset($origin_model_schema->schema()->schema[$origin_field_name])) {
+			throw new VnBizError("$origin_field_name) is not defined in $origin_model_name");
+		}
+		$origin_field = $origin_model_schema->schema()->schema[$origin_field_name];
+		if (!isset($this->schema()->schema[$field_name])) {
+			throw new VnBizError("$field_name is not defined");
+		}
+		$field = $this->schema()->schema[$field_name];
+		if ($field['type'] !== $origin_field['type']) {
+			throw new VnBizError("$field_name type must be " . $origin_field['type'] . ', same with ' . $origin_model_name . '.' . $origin_field_name);
+		}
+
+		$func_mirror = function (&$context) use ($model_name, $field_name, $ref_field_name, $origin_field_name) {
+			$origin_model = &$context['model'];
+			$origin_old_model = &$context['old_model'];
+			if (isset($origin_model[$origin_field_name]) && (!isset($origin_old_model[$origin_field_name]) || $origin_model[$origin_field_name] != $origin_old_model[$origin_field_name])) {
+				$models = vnbiz_model_find($model_name, [
+					$ref_field_name => $origin_old_model['id']
+				], [
+					'limit' => 100
+				]);
+				foreach ($models as $m) {
+					vnbiz_model_update($model_name, [
+						'id' => $m['id']
+					], [
+						$field_name => $origin_model[$origin_field_name]
+					], [
+						'skip_db_actions' => false
+					], true);
+				}
+			}
+		};
+
+		vnbiz_model($origin_model_name)->db_begin_update($func_mirror); // not db_end_update!
+		return $this;
 	}
 
 	// private function crop() {
@@ -187,6 +231,25 @@ class Model
 		return $this;
 	}
 
+	public function system_field()
+	{
+		$field_names = func_get_args();
+
+		foreach ($field_names as $field_name) {
+			if (!isset($this->schema()->schema[$field_name])) {
+				throw new VnBizError("$field_name is not defined");
+			}
+
+			if (!isset($this->schema()->schema[$field_name]['meta'])) {
+				$this->schema()->schema[$field_name]['meta'] = [
+					'system' => true
+				];
+			} else {
+				$this->schema()->schema[$field_name]['meta']['readonly'] = true;
+			}
+		}
+	}
+
 	public function web_readonly()
 	{
 		$field_names = func_get_args();
@@ -195,9 +258,13 @@ class Model
 			if (!isset($this->schema()->schema[$field_name])) {
 				throw new VnBizError("$field_name is not defined");
 			}
-			$this->schema()->schema[$field_name]['meta'] = [
-				'readonly' => true
-			];
+			if (!isset($this->schema()->schema[$field_name]['meta'])) {
+				$this->schema()->schema[$field_name]['meta'] = [
+					'readonly' => true
+				];
+			} else {
+				$this->schema()->schema[$field_name]['meta']['readonly'] = true;
+			}
 		}
 		$remove_web_readonly_fields = function (&$context) use ($field_names) {
 			foreach ($field_names as $field_name) {
@@ -215,12 +282,13 @@ class Model
 		$this->uint("v");
 		$this->default(['v' => 1]);
 		$this->web_readonly('v');
+		$this->system_field('v');
 
 		$this->db_before_create(function (&$context) {
 			$context['model']['v'] = 1;
 		});
 
-		$this->db_before_update(function (&$context) {
+		$this->db_begin_update(function (&$context) {
 			if (isset($context['filter']) && isset($context['filter']['v'])) {
 				if ($context['old_model']['v'] != $context['filter']['v']) {
 					throw new VnBizError("Current value is " . $context['old_model']['v'] . '. But ' . $context['filter']['v'] . ' is provided.', 'invalid_v');
@@ -263,6 +331,7 @@ class Model
 	private function time_at()
 	{
 		$this->datetime('created_at', 'updated_at');
+		$this->system_field('created_at', 'updated_at');
 		$this->web_readonly('created_at', 'updated_at');
 
 		$model_name = $this->schema->model_name;
@@ -334,15 +403,32 @@ class Model
 		$model_name = $this->schema->model_name;
 
 		$this->schema()->has_history = true;
+		$that = $this;
 
-		$this->db_after_update(function (&$context) use ($model_name) {
-			$model = &$context['old_model'];
+		$this->db_end_update(function (&$context) use ($model_name, $that) {
+			if (!isset($context['old_model']) || !isset($context['model'])) {
+				return;
+			}
+			$new_model = &$context['model'];
+			$old_model = &$context['old_model'];
+
+			$updated_keys = array_keys($new_model);
+			$updated_not_system_keys = [];
+			foreach ($updated_keys as $key) {
+				if (isset($that->schema()->schema[$key]['meta']) && isset($that->schema()->schema[$key]['meta']['system']) && $that->schema()->schema[$key]['meta']['system']) {
+					$updated_not_system_keys[] = $key;
+				}
+			}
+			if (count($updated_not_system_keys) == 0) {
+				return;
+			}
+
 			$c = [
 				'model_name' => 'history',
 				'model' => [
-					'model_id' => $model['id'],
+					'model_id' => $old_model['id'],
 					'model_name' => $model_name,
-					'model_json' => json_encode($model)
+					'model_json' => json_encode($old_model)
 				],
 				'in_trans' => true
 			];
@@ -350,7 +436,7 @@ class Model
 		});
 
 		if ($remove_on_delete) {
-			$this->db_after_delete(function (&$context) use ($model_name) {
+			$this->db_end_delete(function (&$context) use ($model_name) {
 				$model = &$context['old_model'];
 				R::exec('DELETE FROM `history` WHERE model_name=? AND model_id=?', [$model_name, $model['id']]);
 			});
@@ -363,6 +449,7 @@ class Model
 	{
 		$this->schema()->has_trash = true;
 		$this->bool('is_trash');
+		$this->system_field('is_trash');
 
 		$func_set_default_is_trash = function (&$context) {
 			if (!isset($context['model']['is_trash'])) {
@@ -401,6 +488,10 @@ class Model
 
 		$this->float('review_rate')
 			->no_update('review_rate');
+
+
+		$this->system_field('review_count', 'review_count_1', 'review_count_2', 'review_count_3', 'review_count_4', 'review_count_5', 'review_rate');
+
 
 		$this->db_before_create(function (&$context) {
 			$context['model']['review_count'] = 0;
@@ -513,6 +604,7 @@ class Model
 		$this->schema()->has_comments = true;
 
 		$this->bool('comment_enable');
+		$this->system_field('comment_enable');
 
 		$this->back_ref_count('number_of_comments', 'comment', 'model_id', [
 			'model_name' => $model_name
@@ -573,7 +665,7 @@ class Model
 				], [
 					"number_of_$mark_type" => $count
 				], [
-					'skip_db_actions' => true
+					'skip_db_actions' => false
 				]);
 			}
 		});
@@ -602,7 +694,7 @@ class Model
 				], [
 					"number_of_$mark_type" => $count
 				], [
-					'skip_db_actions' => true
+					'skip_db_actions' => false
 				]);
 			}
 		});
@@ -1254,12 +1346,15 @@ class Model
 	public function enum($field_name, $options, $default_value = null)
 	{
 		vnbiz_assure_valid_name($field_name);
+
+		$this->default([$field_name => $default_value]);
+
 		$this->schema->add_field($field_name, 'enum');
 		$this->schema->set_field($field_name, [
 			'options' => $options
 		]);
 
-		$func_validate_enum = function (&$context) use ($field_name, $default_value) {
+		$func_validate_enum = function (&$context) use ($field_name) {
 			$model = &$context['model'];
 
 			if (isset($model[$field_name])) {
@@ -1268,8 +1363,6 @@ class Model
 				if (!is_string($value)) {
 					throw new VnBizError("$field_name must be enum<string>", 'invalid_model');
 				}
-			} else {
-				$model[$field_name] = $default_value;
 			}
 		};
 
@@ -1470,7 +1563,12 @@ class Model
 		return $this;
 	}
 
-	function ref($field_name, $ref_model_name)
+	/**
+	 * @param string $field_name
+	 * @param string $ref_model_name
+	 * @param callable $fn_permission_check returns true == has permission
+	 */
+	function ref($field_name, $ref_model_name, $fn_permission_check = null)
 	{
 		$model_name = $this->schema->model_name;
 
@@ -1515,15 +1613,47 @@ class Model
 		});
 
 		// with web_before_create & web_before_update, validate if the ref is valid (user has permissions & ref model exists)
-		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name) {
+		$assure_ref_id = function (&$context) use ($field_name, $ref_model_name, $fn_permission_check) {
 			if (isset($context['model']) && isset($context['model'][$field_name])) {
 				$ref_id = $context['model'][$field_name];
-
-
 
 				if ($ref_id === '') {
 					unset($context['model'][$field_name]);
 					return;
+				}
+
+				$model = vnbiz_model_find_one($ref_model_name, [
+					'id' => $ref_id
+				]);
+				if ($model) {
+					return;
+				} else {
+					throw new VnBizError("Invalid $field_name, model doesn't exist", 'invalid_model');
+				}
+			}
+		};
+
+		$this->db_before_create($assure_ref_id);
+		$this->db_before_update($assure_ref_id);
+
+
+		$check_ref_permission = function () use ($field_name, $ref_model_name, $fn_permission_check) {
+			if (isset($context['model']) && isset($context['model'][$field_name])) {
+				$ref_id = $context['model'][$field_name];
+
+				if ($ref_id === '') {
+					unset($context['model'][$field_name]);
+					return;
+				}
+
+				if ($fn_permission_check) {
+					if ($fn_permission_check($context)) {
+						return;
+					} else {
+						throw new VnBizError("Invalid $field_name, missing permissions", 'permission', [
+							$field_name => 'Missing permissions.'
+						], null, 403);
+					}
 				}
 
 				$find_context = [
@@ -1536,14 +1666,14 @@ class Model
 
 				vnbiz_do_action('web_model_find', $find_context);
 
+				// makesure user has permission to view
 				if (sizeof($find_context['models']) == 0) {
 					throw new VnBizError("Invalid $field_name, model doesn't exist or missing permissions", 'invalid_model');
 				}
 			}
 		};
-
-		$this->web_before_create($assure_ref_id);
-		$this->web_before_update($assure_ref_id);
+		$this->web_before_create($check_ref_permission);
+		$this->web_before_update($check_ref_permission);
 
 		return $this;
 	}
@@ -1617,7 +1747,8 @@ class Model
 		vnbiz_assure_model_name_exists($model_name);
 
 		$this->int($field_name);
-		$this->no_update($field_name);
+		$this->web_readonly($field_name);
+		$this->system_field($field_name);
 
 		$this->db_before_create(function (&$context) use ($field_name) {
 			$context['model'][$field_name] = 0;
@@ -1632,21 +1763,20 @@ class Model
 			if ($id !== null) {
 				$count_filter = array_merge($filter, [$ref_field_name => $id]);
 				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
-				try {
-					vnbiz_model_update($model_name, [
-						'id' => $id
-					], [
-						$field_name => $count
-					], [
-						'skip_db_actions' => true
-					], true);
-				} catch (\Exception $e) {
-					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
-				}
+				L()->debug('RECOUNT increase count=' . $count, $count_filter);
+				vnbiz_model_update($model_name, [
+					'id' => $id
+				], [
+					$field_name => $count
+				], [
+					'skip_db_actions' => false
+				], true);
 			}
 		};
 
-		vnbiz_add_action('db_after_commit_create_' . $ref_model_name, $increase);
+
+		// vnbiz_model($ref_model_name)->db_end_create($increase);
+		vnbiz_add_action('db_after_create_' . $ref_model_name, $increase);
 
 		$recount = function (&$context) use ($field_name, $model_name, $ref_model_name, $ref_field_name, $filter) {
 
@@ -1669,17 +1799,14 @@ class Model
 					// update count
 					$count_filter = array_merge($filter, [$ref_field_name => $id]);
 					$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
-					try {
-						vnbiz_model_update($model_name, [
-							'id' => $id
-						], [
-							$field_name => $count
-						], [
-							'skip_db_actions' => true
-						], true);
-					} catch (\Exception $e) {
-						throw $e;
-					}
+					L()->debug('RECOUNT count=' . $count, $count_filter);
+					vnbiz_model_update($model_name, [
+						'id' => $id
+					], [
+						$field_name => $count
+					], [
+						'skip_db_actions' => false
+					], true);
 				} else {
 					$updated_model_contains_filter = vnbiz_array_has_one_of_keys($context['model'], array_keys($filter));
 				}
@@ -1689,23 +1816,23 @@ class Model
 			// 
 			if ($old_id && $old_id !== $id) {
 				$count_filter = array_merge($filter, [$ref_field_name => $old_id]);
+
 				$count = vnbiz_model_count($ref_model_name, $count_filter, true, 'LOCK IN SHARE MODE');
-				try {
-					vnbiz_model_update($model_name, [
-						'id' => $old_id
-					], [
-						$field_name => $count
-					], [
-						'skip_db_actions' => true
-					], true);
-				} catch (\Exception $e) {
-					trigger_error('back_ref_count error, ' . $e->getMessage(), E_USER_ERROR);
-				}
+
+				vnbiz_model_update($model_name, [
+					'id' => $old_id
+				], [
+					$field_name => $count
+				], [
+					'skip_db_actions' => false
+				], true);
 			}
 		};
 
-		vnbiz_add_action('db_after_commit_update_' . $ref_model_name, $recount);
-		vnbiz_add_action('db_after_commit_delete_' . $ref_model_name, $recount);
+		// vnbiz_model($ref_model_name)->db_end_update($recount);
+		// vnbiz_model($ref_model_name)->db_end_delete($recount);
+		vnbiz_add_action('db_after_update_' . $ref_model_name, $recount);//not db_end_update_
+		vnbiz_add_action('db_after_delete_' . $ref_model_name, $recount);//not db_end_delete_
 
 		return $this;
 	}
@@ -1737,35 +1864,59 @@ class Model
 
 	function author()
 	{
+		$this->ref('created_by', 'user');
+		$this->ref('updated_by', 'user');
 
-		//remove all author fields if exists. definition must be after;
+		$this->system_field('created_by', 'updated_by');
+
+		$this->web_readonly('created_by', 'updated_by');
+
+
 		$func_set_create_author = function (&$context) {
 			unset($context['model']['updated_by']);
 
 			$user = vnbiz_user();
 
-			if ($user) {
+			if ($user && !isset($context['model']['created_by'])) {
 				$context['model']['created_by'] = $user['id'];
 			}
 		};
 		$this->db_before_create($func_set_create_author);
 
-		$func_set_update_author = function (&$context) {
-			unset($context['model']['created_by']);
+		// $func_set_update_author = function (&$context) {
+		// 	unset($context['model']['created_by']);
 
+		// 	$user = vnbiz_user();
+
+		// 	if ($user) { // !important: if user is not logged in, we don't update updated_by
+		// 		$context['model']['updated_by'] = $user['id'];
+		// 	}
+		// };
+
+		// $this->db_before_update($func_set_update_author);
+
+		$this->web_before_create(function (&$context) {
 			$user = vnbiz_user();
 
 			if ($user) {
-				$context['model']['updated_by'] = $user['id'];
+				$context['model']['created_by'] = $user['id'];
+			} else {
+				unset($context['model']['created_by']);
 			}
-		};
 
-		$this->db_before_update($func_set_update_author);
+			unset($context['model']['updated_by']);
+		});
 
-		$this->ref('created_by', 'user');
-		$this->ref('updated_by', 'user');
+		$this->web_before_update(function (&$context) {
+			$user = vnbiz_user();
+			unset($context['model']['created_by']);
 
-		$this->web_readonly('created_by', 'updated_by');
+			if ($user) {
+				$context['model']['updated_by'] = $user['id'];
+			} else {
+				unset($context['model']['created_by']);
+			}
+		});
 
 		return $this;
 	}

@@ -350,6 +350,10 @@ trait vnbiz_trait_s3_file
                     $s3_model_ids[] = $model[$field_name];
                 }
             }
+            if (sizeof($s3_model_ids) == 0) {
+                return;
+            }
+            
             $s3s = vnbiz_model_find('s3', ['id' => $s3_model_ids]);
             $s3s_map = [];
             foreach ($s3s as &$s3) {
@@ -415,6 +419,10 @@ trait vnbiz_trait_s3_file
                     $s3_model_ids[] = $model[$field_name];
                 }
             }
+            if (sizeof($s3_model_ids) == 0) {
+                return;
+            }
+
             $s3s = vnbiz_model_find('s3', ['id' => $s3_model_ids]);
             $s3s_map = [];
             foreach ($s3s as &$s3) {

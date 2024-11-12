@@ -13,6 +13,7 @@ trait VnBiz_sql
     {
 
         $this->actions()->add_action_one('model_create', function (&$context) {
+            L()->debug('model_create', $context);
 
             $this->actions()->do_action('db_before_create', $context);
 
@@ -72,6 +73,8 @@ trait VnBiz_sql
     {
 
         $this->actions()->add_action_one('model_update', function (&$context) {
+            L()->debug('model_update', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
             $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
 
@@ -80,7 +83,7 @@ trait VnBiz_sql
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
             }
-            if (!is_array($context['model'])) {
+            if (!is_array($context['model']) || sizeof($context['model']) == 0) {
                 throw new VnBizError('Missing model', 'invalid_context');
             }
             if (!isset($context['filter']) || !isset($context['filter']['id'])) {
@@ -121,12 +124,13 @@ trait VnBiz_sql
                 $context['old_model'] = $old_model;
                 $context['old_model']['@model_name'] = $model_name;
 
+                $old_id = $context['old_model']['id'];
                 $ns = isset($old_model['ns']) ? $old_model['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
-                vnbiz_redis_del($cached_key);
+                $cached_key = "$ns:$model_name:$old_id";
 
                 $skip_db_actions ?: $this->actions()->do_action("db_before_update_$model_name", $context);
+
+                L()->debug('model_update: id:' . $old_model['id'], $context['model']);
 
                 $row = R::dispense($model_name);
                 $row->id = $old_model['id'];
@@ -137,13 +141,15 @@ trait VnBiz_sql
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
+
+                vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();
                 !$in_trans && ($context['in_trans'] = false);
                 throw $e;
             }
 
-            $this->actions()->do_action("db_after_commit_update_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_commit_update_$model_name", $context);
 
             $skip_db_actions ?: $this->actions()->do_action('db_after_update', $context);
         });
@@ -296,6 +302,7 @@ trait VnBiz_sql
         $sql_query_params = &$context['sql_query_params'];
         $sql_query_order = vnbiz_get_var($context['sql_query_order'], '');
         $lock_query = vnbiz_get_var($context['sql_lock_query'], '');
+        $in_trans = vnbiz_get_key($context, 'in_trans', false);
 
         $limit = vnbiz_get_var($meta['limit'], 100);
         $offset = vnbiz_get_var($meta['offset'], 0);
@@ -307,6 +314,7 @@ trait VnBiz_sql
         // fetch from cache when filter by [id] or [id, ns] and no other conditions
         if (
             (
+                !$in_trans &&
                 isset($context['filter']) &&  (
                     (sizeof($context['filter']) == 1 && isset($context['filter']['id']) && !empty($context['filter']['id']))
                     || (sizeof($context['filter']) == 2 && isset($context['filter']['id']) && !empty($context['filter']['id']) && isset($context['filter']['ns']))
@@ -339,7 +347,7 @@ trait VnBiz_sql
 
             // load missed rows from db
             $missed_ids = [];
-            foreach ($ids as $index=>$id) {
+            foreach ($ids as $index => $id) {
                 if (!$cache_result[$index]) {
                     $missed_ids[] = $id;
                 } else {
@@ -347,10 +355,16 @@ trait VnBiz_sql
                 }
             }
 
+            // TODO: $limit, $offset is not supported?
+
             if (sizeof($missed_ids) == 0) {
+                L()->debug('db_fetch(): all from cache', $ids);
                 return $cached_rows;
             }
 
+            L()->debug('db_fetch(): more from sql: ', $missed_ids);
+
+            // L()->debug('db_fetch() R::find() ' . $model_name, $missed_ids);
             $rows = R::find($model_name, 'id IN (' . R::genSlots($missed_ids) . ')', $missed_ids);
             $rows = R::beansToArray($rows);
             foreach ($rows as $row) {
@@ -362,13 +376,14 @@ trait VnBiz_sql
             return array_merge($cached_rows, $rows);
         }
 
-
         $sql_query_conditions = join(' AND ', $sql_query_conditions);
         $sql_query = $sql_query_conditions . ' ' . $sql_query_order . ' LIMIT ? OFFSET ? ' . $lock_query;
         $sql_params = array_merge($sql_query_params, [$limit, $offset]);
 
         $context['sql_query'] = $sql_query;
         $context['sql_params'] = $sql_params;
+
+        L()->debug("db_fetch(): fetch from sql: $model_name, $sql_query", $sql_params);
 
         $rows = R::find($model_name, $sql_query, $sql_params);
         $rows = R::beansToArray($rows);
@@ -386,6 +401,8 @@ trait VnBiz_sql
     private function add_action_model_find()
     {
         $this->actions()->add_action_one('model_find', function (&$context) {
+            L()->debug('model_find ', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
             $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
 
@@ -492,7 +509,11 @@ trait VnBiz_sql
     private function add_action_model_delete()
     {
         $this->actions()->add_action_one('model_delete', function (&$context) {
-            $this->actions()->do_action('db_before_delete', $context);
+            L()->debug('model_delete', $context);
+            $meta = vnbiz_get_var($context['meta'], []);
+            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
+
+            $skip_db_actions ?: $this->actions()->do_action('db_before_delete', $context);
 
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
@@ -535,12 +556,9 @@ trait VnBiz_sql
                 $context['old_model'] = $rows[0];
                 $context['old_model']['@model_name'] = $model_name;
 
+
                 //TODO: refactor this
                 // TODO: Why we can't use $context['fitler']['ns]
-                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
-                $id = $context['old_model']['id'];
-                $cached_key = "$ns:$model_name:$id";
-                vnbiz_redis_del($cached_key);
 
                 // foreach ($field_names as $field_name) {
                 //     if (isset($model[$field_name])) {
@@ -548,28 +566,39 @@ trait VnBiz_sql
                 //     }
                 // }
 
-                $this->actions()->do_action("db_before_delete_$model_name", $context);
+                $skip_db_actions ?: $this->actions()->do_action("db_before_delete_$model_name", $context);
+
+                $ns = isset($context['old_model']['ns']) ? $context['old_model']['ns'] : '0';
+                $id = $context['old_model']['id'];
+                $cached_key = "$ns:$model_name:$id";
+
                 R::trashBatch($model_name, vnbiz_get_ids($rows));
-                $this->actions()->do_action("db_after_delete_$model_name", $context);
+
+                $skip_db_actions ?: $this->actions()->do_action("db_after_delete_$model_name", $context);
 
                 !$in_trans && R::commit();
                 !$in_trans && ($context['in_trans'] = false);
+
+                vnbiz_redis_del($cached_key);
             } catch (Exception $e) {
                 !$in_trans && R::rollback();
                 !$in_trans && ($context['in_trans'] = false);
                 throw $e;
             }
 
-            $this->actions()->do_action("db_after_commit_delete_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_commit_delete_$model_name", $context);
 
-            $this->actions()->do_action('db_after_delete', $context);
+            $skip_db_actions ?: $this->actions()->do_action('db_after_delete', $context);
         });
     }
     private function add_action_model_count()
     {
         $this->actions()->add_action_one('model_count', function (&$context) {
+            L()->debug('model_count', $context);
+
             $meta = vnbiz_get_var($context['meta'], []);
-            $this->actions()->do_action('db_before_count', $context);
+            $skip_db_actions = vnbiz_get_var($meta['skip_db_actions'], false);
+            $skip_db_actions ?: $this->actions()->do_action('db_before_count', $context);
 
             if (!isset($context['model_name'])) {
                 throw new VnBizError('Missing model_name', 'invalid_context');
@@ -582,7 +611,7 @@ trait VnBiz_sql
             vnbiz_do_action('sql_gen_filter', $context);
             vnbiz_do_action('sql_gen_order', $context);
 
-            $this->actions()->do_action("db_before_count_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_before_count_$model_name", $context);
 
             $sql_query_conditions = &$context['sql_query_conditions'];
             $sql_query_params = &$context['sql_query_params'];
@@ -595,6 +624,8 @@ trait VnBiz_sql
                 $sql_query_conditions = ' WHERE ' . $sql_query_conditions;
             }
 
+            $sql_query = 'SELECT COUNT(*) FROM ' . $model_name . $sql_query_conditions . ' ' . $lock_query;
+            L()->debug('model_count: ' . $sql_query, $sql_query_params);
             $count = R::getCell('SELECT COUNT(*) FROM ' . $model_name . $sql_query_conditions . ' ' . $lock_query, $sql_query_params);
             $context['count'] = $count;;
 
@@ -608,9 +639,9 @@ trait VnBiz_sql
 
             // $context['count'] = R::count($model_name, $sql_query_conditions, $sql_query_params);
 
-            $this->actions()->do_action("db_after_count_$model_name", $context);
+            $skip_db_actions ?: $this->actions()->do_action("db_after_count_$model_name", $context);
 
-            $this->actions()->do_action('db_after_count', $context);
+            $skip_db_actions ?: $this->actions()->do_action('db_after_count', $context);
         });
     }
 

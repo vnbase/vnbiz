@@ -13,6 +13,9 @@ trait Model_permission
             if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
                 return;
             }
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             vnbiz_assure_user_has_permissions(...$permissions);
         });
         return $this;
@@ -22,6 +25,10 @@ trait Model_permission
     {
         $this->web_before_create(function (&$context) use ($permissions, $func) {
             if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
+                return;
+            }
+
+            if (vnbiz_user_has_permissions('super')) {
                 return;
             }
 
@@ -44,6 +51,9 @@ trait Model_permission
             if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
                 return;
             }
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             vnbiz_assure_user_has_permissions(...$permissions);
         });
         return $this;
@@ -56,6 +66,9 @@ trait Model_permission
                 return;
             }
 
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             if (vnbiz_user_has_permissions(...$permissions)) {
                 return;
             }
@@ -76,6 +89,9 @@ trait Model_permission
                 return;
             }
 
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             vnbiz_assure_user_has_permissions(...$permissions);
         });
         return $this;
@@ -88,6 +104,9 @@ trait Model_permission
                 return;
             }
 
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             if (vnbiz_user_has_permissions(...$permissions)) {
                 return;
             }
@@ -107,6 +126,9 @@ trait Model_permission
             if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
                 return;
             }
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             vnbiz_assure_user_has_permissions(...$permissions);
         });
         return $this;
@@ -119,6 +141,9 @@ trait Model_permission
                 return;
             }
 
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             if (vnbiz_user_has_permissions(...$permissions)) {
                 return;
             }
@@ -143,6 +168,9 @@ trait Model_permission
                 return;
             }
 
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             if (vnbiz_user_has_permissions(...$permissions)) {
                 return;
             }
@@ -176,6 +204,10 @@ trait Model_permission
     {
         $this->find_permission_or($permissions, function (&$context) use ($user_id_field_name) {
             if (isset($GLOBALS['vnbiz_permission_skip']) && $GLOBALS['vnbiz_permission_skip'] == true) {
+                return;
+            }
+
+            if (vnbiz_user_has_permissions('super')) {
                 return;
             }
 
@@ -213,6 +245,10 @@ trait Model_permission
     public function write_permission_or_user_id($permissions, $user_id_field_name)
     {
         $create_func = function (&$context) use ($user_id_field_name) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
+
             $user = vnbiz_user();
             if (!$user) {
                 return false;
@@ -228,6 +264,9 @@ trait Model_permission
         $this->create_permission_or($permissions, $create_func);
 
         $update_func = function (&$context) use ($user_id_field_name) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             $user = vnbiz_user();
             if (!$user) {
                 return false;
@@ -249,6 +288,9 @@ trait Model_permission
     public function read_field_permission($fields, $permissions)
     {
         $this->web_after_find(function (&$context) use ($fields, $permissions) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             $models = &$context['models'];
             if (vnbiz_user_has_permissions(...$permissions) == false) {
                 foreach ($models as &$model) {
@@ -264,6 +306,10 @@ trait Model_permission
     public function write_field_permission($fields, $permissions)
     {
         $this->web_before_find(function (&$context) use ($fields, $permissions) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
+
             $model = &$context['model'];
             if (vnbiz_user_has_permissions(...$permissions) == false) {
                 foreach ($fields as $field) {
@@ -279,6 +325,9 @@ trait Model_permission
     public function read_field_permission_or($fields, $permissions, $func)
     {
         $this->web_after_find(function (&$context) use ($fields, $permissions, $func) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
             $models = &$context['models'];
 
             if (vnbiz_user_has_permissions(...$permissions) == false) {
@@ -297,6 +346,10 @@ trait Model_permission
     public function write_field_permission_or($fields, $permissions, $func)
     {
         $this->web_before_find(function (&$context) use ($fields, $permissions, $func) {
+            if (vnbiz_user_has_permissions('super')) {
+                return;
+            }
+            
             $model = &$context['model'];
             if (vnbiz_user_has_permissions(...$permissions) == false) {
                 if (!$func($model)) {

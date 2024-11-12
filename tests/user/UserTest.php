@@ -8,8 +8,8 @@ use PHPUnit\Framework\TestCase;
 
 final class UserTest extends TestCase
 {
-    public static function setUpBeforeClass(): void {
-    }
+    // public static function setUpBeforeClass(): void {
+    // }
 
     public function test_User_FindSimple(): void
     {
