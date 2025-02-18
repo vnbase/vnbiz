@@ -7,6 +7,7 @@ use VnBiz\VnBizError;
 
 //TODO: has editing
 vnbiz_model_add('productpage')
+    ->slug('slug')
     ->string('name')
     ->text('description')
     ->s3_image('logo', [300])

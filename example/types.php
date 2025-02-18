@@ -278,10 +278,10 @@ vnbiz_model_add('webpost')
 // 	;
 
 
-vnbiz_model_add('order')
-	->has_datascope()
-	->ref('contact_id', 'contact')
-	->ref('user_id', 'user')
-	->text('note')
-	->author()
-	;
+// vnbiz_model_add('order')
+// 	->has_datascope()
+// 	->ref('contact_id', 'contact')
+// 	->ref('user_id', 'user')
+// 	->text('note')
+// 	->author()
+// 	;
