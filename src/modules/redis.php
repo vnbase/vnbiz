@@ -38,9 +38,13 @@ function vnbiz_redis()
     }
 
     if (defined("REDIS_PASSWORD")) {
-        if (REDIS_PASSWORD) {
+        if (defined("REDIS_USERNAME")) {
             $redis->auth([
-                'user' => REDIS_PORT,
+                'user' => REDIS_USERNAME,
+                'pass' => REDIS_PASSWORD
+            ]);
+        } else {
+            $redis->auth([
                 'pass' => REDIS_PASSWORD
             ]);
         }
